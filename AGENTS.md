@@ -20,7 +20,7 @@ Use shared theme variables and responsive layouts. Add only required components.
 Use LiveKit SDK state for media controls, including controls built with shadcn/ui.
 Use LiveKit Cloud Build and Vercel Hobby only. Verify free limits before deployment; accept service loss at those limits.
 Limit the first release to two participants with private invitations and test conversations.
-Use npm and keep `package-lock.json` synchronized. The package contains the Phase 1 application and development tools.
+Use npm and keep `package-lock.json` synchronized. The package contains the application and development tools.
 Verify current official documentation and compatible versions before adding application dependencies.
 Keep SDK integration in a few components and server modules.
 This is human-to-human video. Do not use an AI voice-agent starter.

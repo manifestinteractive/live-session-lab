@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 
-function PageFrame({ children, room = false }: { children: React.ReactNode; room?: boolean }) {
+export function PageFrame({ children, room = false, call = false }: { children: React.ReactNode; room?: boolean; call?: boolean }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <a href="#main" className="skip-link">Skip to content</a>
@@ -23,7 +23,7 @@ function PageFrame({ children, room = false }: { children: React.ReactNode; room
             Live Session Lab
           </Link>
           <nav aria-label="Main" className="flex gap-2 text-sm">
-            <Link href="/" aria-current={!room ? "page" : undefined} className="nav-link">Setup</Link>
+            <Link href="/" aria-current={!room && !call ? "page" : undefined} className="nav-link">Setup</Link>
             <Link href="/room" aria-current={room ? "page" : undefined} className="nav-link">Room preview</Link>
           </nav>
         </div>
@@ -82,7 +82,7 @@ function PreJoin() {
     <Card className="h-fit [--card-spacing:--spacing(6)]">
       <CardHeader>
         <CardTitle><h2 className="text-xl">Before you join</h2></CardTitle>
-        <CardDescription>Explore the setup. Calls will require a private invitation.</CardDescription>
+        <CardDescription>Explore the setup. Calls require a private invitation.</CardDescription>
       </CardHeader>
       <CardContent>
         <FieldGroup>
@@ -119,7 +119,7 @@ export function Introduction() {
       <div className="max-w-2xl space-y-4">
         <Badge variant="secondary" className="h-auto px-3 py-1">Interface preview</Badge>
         <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">A little closer.<br /><span className="text-muted-foreground">Right in your browser.</span></h1>
-        <p className="max-w-xl text-base/relaxed text-muted-foreground">A small experiment in face-to-face conversation. The planned experience connects two people through a private invitation.</p>
+        <p className="max-w-xl text-base/relaxed text-muted-foreground">A small experiment in face-to-face conversation. Open a private invitation to call. These public screens demonstrate the layout.</p>
       </div>
       <DisconnectedNotice />
       <div className="grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">

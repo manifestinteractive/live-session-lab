@@ -14,12 +14,13 @@ export default defineConfig({
   use: { baseURL: "http://localhost:3100", trace: "retain-on-failure" },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "webkit", use: { ...devices["Desktop Safari"] } },
+    { name: "webkit", testIgnore: "**/capture.spec.ts", use: { ...devices["Desktop Safari"] } },
   ],
   webServer: {
     command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
     url: "http://localhost:3100",
     reuseExistingServer: false,
+    env: { ADMISSION_ENABLED: "false", APP_ORIGIN: "http://localhost:3100" },
     timeout: 120_000,
   },
 });

@@ -1,6 +1,7 @@
 # AI development setup
 
-Status: Phase 1 is implemented and awaits human review.
+Status: Phase 1 received human acceptance. Phase 2 has a confirmed provider capacity failure.
+Physical-device acceptance and human review remain pending.
 The user selected Codex with GPT-6 Astra. Repository configuration preserves the selected model and permission settings.
 The [development plan](../planning-docs/README.md) defines the application and phase boundaries.
 
@@ -84,7 +85,7 @@ The smoke check verifies registry search; it does not claim component installati
 | `npm run ai:shadcn -- <arguments>` | Run the pinned shadcn CLI. Mutating commands remain limited to the authorized phase.                             |
 | `npm run ai:verify`                | Scaffolding, lint, type checks, unit tests, browser tests, and production build.                           |
 
-`ai:verify` runs the real Phase 1 application commands and fails if any command fails or is missing.
+`ai:verify` runs the real application commands and fails if any command fails or is missing.
 The browser suite owns port 3100. Stop other development servers before running it.
 Keep automated browser tests separate from exploratory MCP checks. Do not use the tooling fixture as an application test.
 Keep screenshots and traces in ignored `artifacts/`. Use synthetic data and exclude credentials from evidence.

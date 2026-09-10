@@ -1,7 +1,9 @@
 # Architecture
 
 Status: Phase 1 serves the introduction and pre-join shell at `/`, and the room shell at `/room`.
-Admission endpoints and media integration remain planned. The diagram below describes the target system.
+Phase 2 adds the private `/call` route and `POST /api/token`. Capacity acceptance failed.
+Synthetic media transport passed; physical-device acceptance remains unverified. See [Validation](validation.md).
+The diagram describes the target hosting. The implementation currently runs locally.
 
 ## System boundaries
 
@@ -49,7 +51,7 @@ Both routes show disconnected labels. Media controls and admission are disabled.
 There are no media SDKs, capture requests, admission endpoints, or provider requests in Phase 1.
 The room preview link opens a public layout demonstration. It does not admit a participant to a call.
 
-## Planned interfaces
+## Phase 2 interfaces
 
 | Interface                | Input                                                                       | Result                                                  |
 | ------------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -72,6 +74,40 @@ Grant room join, subscription, and camera/microphone publishing only. Do not gra
 Apply the two-participant limit on every room-creation path, including room recreation after all participants leave.
 Enforce capacity through LiveKit room configuration, not a browser counter or a read-then-count admission check.
 LiveKit exposes the room participant limit through its [RoomService API](https://docs.livekit.io/reference/other/roomservice-api/).
+
+## Phase 2 ownership and admission
+
+`src/lib/server/invitations.mjs` signs and validates room-scoped HS256 invitations with `jose`.
+The issuer and audience are specific to this application. Invitations contain an opaque room identifier and an expiry.
+The local `scripts/operator/invite.mjs` command defaults to a generated room and one-hour validity.
+No operator name or participant name enters the room identifier.
+
+`src/lib/server/admission.ts` validates origin, the admission flag, JSON shape, name length, and invitation claims.
+It reads at most 4,096 body bytes and rejects client-provided room or identity fields.
+It calls the official `LiveKitAPI` to create or retrieve the validated room with `maxParticipants: 2`.
+If the returned room has a different limit, admission fails closed.
+Each five-minute token also includes a room configuration with the same limit to protect automatic room recreation.
+Existing rooms ignore token configuration. The service response check covers that separate path.
+The design depends on LiveKit to arbitrate concurrent joins and reject a third participant.
+That dependency failed live validation. Returning `maxParticipants: 2` does not establish enforcement.
+Keep admission disabled for external use. A count read before token issuance cannot resolve concurrent admission races.
+
+`src/components/private-call.tsx` reads and removes the URL fragment in its first client effect.
+The credential remains in a React ref. It is never written to persistent storage or rendered in the interface.
+Only Join posts it to the same-origin endpoint. The issued token is passed directly to `room.connect`.
+A reload requires reopening the invitation. Public `/` and `/room` remain disconnected layout previews.
+
+`src/lib/call-session.ts` owns preview tracks created by the official browser SDK.
+Explicit button actions start capture. Device enumeration after an action does not request additional permissions.
+Join publishes the existing preview tracks to the connected room. It does not acquire replacement tracks.
+The SDK owns tracks enabled after joining. Leave disconnects with `stopTracks: true` and stops all retained preview tracks.
+A generation counter invalidates late capture and join results after cancellation. Late tracks are stopped immediately.
+Unmount and page exit release capture. A restored page from browser history reloads to avoid retaining an inactive session.
+
+`RoomContext`, `useConnectionState`, and `useLocalParticipant` provide observed SDK state to the interface.
+`useTracks`, `VideoTrack`, and `RoomAudioRenderer` render participant media. `StartAudio` handles blocked audio playback.
+The application does not maintain optimistic mute state or implement its own reconnect loop.
+SDK and component logging are silenced. User-facing errors use fixed messages without provider payloads or credentials.
 
 ## Participant data flow
 
@@ -111,3 +147,20 @@ Phase 1 implementation decisions on 2026-09-10:
 | Semantic theme and focus override | Maintain consistent contrast and visible keyboard focus after component composition. |
 
 See [Privacy and cost](privacy-and-cost.md) for data boundaries and operational limitations.
+
+Phase 2 implementation decisions on 2026-09-10:
+
+| Decision | Reason and tradeoff |
+| --- | --- |
+| Separate `/call` route | Keep accepted public demonstrations available while private invitations open the functional integration. |
+| `jose` 6.2.12 with HS256 | Use an established signing implementation and a server-only secret. Bearer invitations can be shared until expiry. |
+| Capacity in room creation and tokens | Request capacity on all creation paths. The provider test failed; this decision needs resolution before external use. |
+| Single owner for preview tracks | Publish existing capture on join; stop retained tracks after failure or exit. |
+| Disable admission during default browser tests | Make checks independent of local credentials and prevent accidental provider usage. |
+
+SDK versions: `livekit-client` 2.22.3, `@livekit/components-react` 2.9.24, and `livekit-server-sdk` 2.19.0.
+Verified APIs through the LiveKit documentation MCP and the installed SDK declarations.
+References: [tokens and room configuration](https://docs.livekit.io/frontends/reference/tokens-grants/),
+[room management](https://docs.livekit.io/intro/basics/rooms-participants-tracks/rooms/),
+[camera and microphone](https://docs.livekit.io/transport/media/publish/), and
+[React components](https://docs.livekit.io/reference/components/react/).

@@ -78,7 +78,7 @@ It does not revoke issued participant tokens or end existing calls. Keep admissi
 The Phase 4 guide must supply exact, verified operator commands and hosting steps for shutdown and resource removal.
 Document separate removal of the Vercel deployment and LiveKit resources when testing ends.
 
-## Phase 1 data handling
+## Phase 1 data handling (historical)
 
 The disconnected interface does not request capture permissions, enumerate devices, or connect to LiveKit.
 The temporary display-name field is not submitted. The application does not copy it to browser storage or cookies.
@@ -87,3 +87,33 @@ The interface loads no external fonts, analytics, or provider resources.
 Local Next.js development tooling processes page requests. A future deployment can also generate provider request logs.
 The application needs no credentials to run Phase 1. `.env.example` contains placeholders for later integration.
 `ADMISSION_ENABLED=false` records the future default; no admission endpoint exists to enable in Phase 1.
+
+## Phase 2 data handling
+
+The private call route reads the invitation fragment after hydration and removes it before setup interaction.
+No third-party scripts load in the application. Invitations and issued participant tokens stay in memory.
+A participant must click to start camera or microphone preview. Preview stays local until Join publishes its tracks.
+Join sends the invitation and temporary name to the application server. LiveKit receives the name and media after connection.
+The server checks the room configuration through LiveKit before issuing a participant token.
+Provider logs and browser network inspection can contain connection metadata. Application storage and logs do not retain call content or credentials.
+The client disables SDK diagnostic logging. The SDK persists non-sensitive `SILENT` log-level settings in local storage.
+No invitation, token, display name, device choice, or call content enters that storage. Tests check the exact allowed settings.
+Browser-level diagnostics remain outside application control.
+
+Disabling admission blocks future token requests. Previously issued five-minute tokens can still be used until expiry.
+Existing connections and SDK reconnect tokens have their own lifecycle. Invitation expiry does not terminate them.
+An operator must end active rooms separately. Short room departure timeouts remove empty rooms, not active calls.
+Individual invitation revocation remains unavailable without rotating the shared signing secret, which invalidates all unexpired invitations.
+Rotating that secret does not revoke already issued LiveKit tokens.
+
+Automated checks use synthetic secrets and mocked provider administration. Invitation-bearing browser tests do not retain traces or videos.
+No real credentials, provider resources, or physical calls were used for this implementation's automated validation.
+
+## Phase 2 capacity limitation
+
+The live check on 2026-09-10 admitted three ordinary participants while LiveKit reported `maxParticipants: 2`.
+A separate test with one room creation and standard tokens reproduced the failure.
+The intended two-person capacity boundary is not established. Keep external admission disabled until it is resolved.
+The optional `npm run test:live` command consumes provider allowance and must run only on a confirmed free project.
+The default `npm run ai:verify` command keeps admission disabled and makes no provider calls.
+See [Validation](validation.md) for observations and unperformed physical-device checks.

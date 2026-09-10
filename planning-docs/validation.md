@@ -1,7 +1,8 @@
 # Validation
 
-Status: Phase 1 implementation and automated validation passed. Human review is pending.
-Phases 2 through 4 are unstarted.
+Status: Phase 1 received human acceptance on 2026-09-10. Phase 2 integration is implemented.
+Phase 2 validation is recorded below. Physical-device acceptance and human review remain pending.
+Phases 3 and 4 are unstarted.
 Planned cases below are not test results.
 
 ## Automated checks
@@ -160,3 +161,82 @@ The physical-device matrix above remains unchanged. Live calls are outside this 
 
 Suggested commit message: `feat: add the Phase 1 interface foundation`.
 No commit, push, or deployment occurred. Stop here until Phase 1 receives human review.
+
+### Phase 1 human review: 2026-09-10
+
+The user accepted Phase 1 and instructed the coding agent to continue.
+This records acceptance of the interface increment. It does not replace the unperformed physical-device checks above.
+
+### Phase 2 private call integration: 2026-09-10
+
+Revision: uncommitted Phase 2 work after the committed Phase 1 foundation.
+Environment: macOS arm64, Node.js 26.8.1, npm 11.19.0.
+The user supplied credentials in ignored `.env.local` and confirmed that the LiveKit project uses the free plan.
+The coding agent did not change the account plan or the credential file.
+
+#### Repeatable automated checks
+
+| Check | Actual result |
+| --- | --- |
+| Dependency installation | Passed. npm reported zero known vulnerabilities for 718 audited packages. |
+| `npm run ai:verify` | Passed final scaffolding checks, lint, type checking, 43 unit/component tests, 47 browser tests, and the production build. This command excludes live provider acceptance. |
+| Invitation validation | Passed default validity, malformed, tampered, expired, wrong issuer/audience/algorithm, invalid room, and excessive lifetime cases. |
+| Token endpoint | Passed origin rejection, disabled admission, strict input shape, oversized streamed input, invalid names, room/identity substitution, and unsupported methods. |
+| Token permissions | Passed signed-token verification for server-generated identities, five-minute expiry, camera/microphone-only publication, and disabled data/admin grants. |
+| Capacity configuration | Passed checks that every admission creates/checks a two-participant room and includes the same configuration in its token. Mocked tests alone do not prove provider enforcement. |
+| Preview ownership | Passed explicit capture, track reuse on publish, failed connection/publish cleanup, late permission/switch cleanup, cancellation, duplicate-action rejection, and SDK mute delegation. |
+| Local invitation command | Passed synthetic signing and validation without provider access. Invalid operator configuration outputs no credential. |
+| Browser cleanup | Passed real browser capture cleanup with Chromium synthetic devices after failed admission, toggling off, and leaving setup. |
+| Browser privacy | Passed fragment removal, reload behavior, and non-persistence of credentials. Only the SDK's exact `SILENT` log-level settings are allowed in local storage. |
+| Browser layouts | Passed axe and overflow checks for private setup and invitation-required states at 320, 390, 768, and 1440 pixels in Chromium and WebKit. |
+
+An initial browser run used an unsupported nested launch configuration; synthetic capture tests now have a separate test file.
+The call alert now has an accessible name to distinguish it from Next.js route announcements.
+A privacy assertion exposed SDK log-level persistence. The test now allows only those documented, non-sensitive settings.
+A later review added fragment handling when another invitation opens on the same page. It also releases the previous session.
+
+#### Playwright MCP visual review
+
+Passed on the local production build with admission disabled.
+Captured and viewed `phase2-setup-320.png`, `phase2-setup-390.png`, `phase2-setup-768.png`, and `phase2-setup-1440.png`.
+Also viewed `phase2-invitation-required.png`, `phase2-landscape.png`, `phase2-text-200.png`, and `phase2-focus.png`.
+Evidence stays in ignored `artifacts/playwright/`. The invitation input used for these screenshots was deliberately invalid.
+The private setup reflows from two columns to one. Labels remain readable and keyboard focus remains visible.
+At 200% root text size, controls remain reachable without horizontal page overflow.
+The MCP session reported zero console errors or warnings. These screenshots do not prove live media transport.
+
+#### Provider checks with synthetic browser media
+
+The user confirmed LiveKit Cloud Build before these tests. Only temporary test rooms were used.
+The local production process used an `ADMISSION_ENABLED=true` override. The ignored `.env.local` file remained unchanged.
+This process was stopped after testing. No external admission or deployment was enabled.
+
+| Check | Actual result |
+| --- | --- |
+| Bidirectional transport | Passed in isolated Chromium contexts. Remote video decoded in both directions; inbound audio RTP bytes increased in both directions. |
+| SDK controls | Passed camera mute/unmute propagation to the remote interface and microphone state reflected by the local control. |
+| Leave and rejoin | Passed capture cleanup, remote departure, and rejoin with an invitation held in memory. |
+| Two-participant capacity | Failed repeatedly. The provider returned `maxParticipants: 2` and three connected standard participants. None had hidden or agent permissions. |
+| Isolated capacity reproduction | Failed with one explicit room creation and standard participant tokens, independent of the application token endpoint. A third participant still connected. |
+| Room recreation | Failed to verify. Rejoin after deletion connected, but listing the recreated room did not return the expected configuration within 15 seconds. |
+| Optional live command | `npm run test:live` returned failure. It is excluded from `ai:verify`, uses real provider resources, and keeps credential-bearing errors out of output. |
+| Cleanup | Test browser contexts closed. Temporary rooms were deleted or returned not found. A final provider query returned zero active rooms. `.env.local` still had admission disabled. |
+
+The provider's documented capacity setting did not establish the required boundary in this project.
+The cause remains unverified. The separate reproduction narrows the problem but does not establish a provider defect.
+Do not substitute a browser counter or a server count check: neither protects simultaneous joins without authoritative allocation.
+Keep external admission disabled until the capacity requirement has a verified solution.
+
+Connected screenshots at 1440 and 390 pixels were captured by Playwright Test and viewed separately from the MCP setup screenshots.
+They show synthetic media, not physical camera output. These checks do not prove audible quality or Mac/iPhone communication.
+The free plan was confirmed by the user; metered usage and billing settings were not independently inspected.
+The final default verification passed after the same-page invitation correction. `git diff --check` also passed.
+
+#### Human review and remaining checks
+
+Phase 2 remains incomplete because capacity acceptance failed. Human review is pending.
+Mac Chrome/Safari with a physical iPhone, actual microphone/speaker quality, and physical camera cleanup remain Not run.
+A trusted HTTPS address is required for iPhone capture. No deployment or certificate trust changes occurred.
+Review the invitation workflow and perform the Mac/iPhone acceptance cases before treating Phase 2 as fully accepted.
+Phases 3 and 4 remain unstarted. No commit, push, or deployment occurred.
+Suggested commit message: `feat: add private LiveKit calls and protected admission`.

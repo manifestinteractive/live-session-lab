@@ -1,6 +1,8 @@
 # Implementation plan
 
-Phase 1 is implemented and awaits human review. Phases 2 through 4 are unstarted.
+Phase 1 received human acceptance. Phase 2 remains incomplete because the live two-participant limit failed.
+Physical-device acceptance and human review remain pending.
+Phases 3 and 4 are unstarted.
 Complete one requested phase, then stop for human review.
 Use [Architecture](architecture.md) for interfaces and [Validation](validation.md) for evidence requirements.
 
