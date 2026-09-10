@@ -1,7 +1,7 @@
 # AI development setup
 
-Status: Phase 1 received human acceptance. Phase 2 uses fixed identities after provider capacity testing exposed a limitation.
-Physical-device acceptance and human review remain pending.
+Status: Phase 2 code received human acceptance. Phase 3 implements resilience and privacy.
+The user reported successful desktop/iPhone streaming. Remaining physical-device checks and Phase 3 human review are pending.
 The user selected Codex with GPT-6 Astra. Repository configuration preserves the selected model and permission settings.
 The [development plan](../planning-docs/README.md) defines the application and phase boundaries.
 

@@ -1,5 +1,18 @@
 # Privacy and cost
 
+## Local phone testing
+
+The optional `dev:lan` command serves development HTTPS on all IPv4 interfaces with `0.0.0.0:3000`.
+Use it only on the trusted local network. It is not a public deployment.
+`lan:setup` creates a certificate for a selected local address using an existing mkcert CA.
+It does not install trust or change `.env.local`. Certificates and LAN configuration remain ignored by Git.
+Only the public root certificate is copied for phone installation. Private keys must remain on the Mac.
+Installing the public root gives that device trust in certificates issued by the local CA.
+Remove the phone's test certificate profile when testing ends.
+The LAN server and `invite:lan` command share one HTTPS origin. Token admission still requires that exact origin and a valid invitation.
+Use an explicit `ADMISSION_ENABLED=true` process override for controlled calls, then stop that process after testing.
+The [README](../README.md#test-from-a-phone-on-the-local-network) contains the local setup steps.
+
 Status: requirements for the planned application. Account plans and deployed controls have not been verified.
 
 ## Data handling
@@ -120,3 +133,16 @@ This avoids a database, but does not provide strict device reservations or parti
 The optional `npm run test:live` command consumes provider allowance and must run only on a confirmed free project.
 The default `npm run ai:verify` command keeps admission disabled and makes no provider calls.
 See [Validation](validation.md) for observations and unperformed physical-device checks.
+
+## Phase 3 privacy controls and limitations
+
+Recovery messages use fixed error categories. They do not display provider errors, device identifiers, invitations, or tokens.
+Connection details contains SDK state and connection quality only. Unknown quality is labeled Unavailable.
+Device labels remain in memory for input selection; the application does not store them.
+The browser can preserve its own permission decisions outside application storage.
+
+Responses set a no-referrer policy and reject framing. Camera and microphone permissions are limited to the same origin.
+Screen capture and geolocation are disabled. No analytics or call recording was added.
+A native permission prompt can outlive a cancelled setup. Any resulting track is stopped when the pending request resolves.
+Mobile backgrounding and browser termination can interrupt a call; recovery is not guaranteed.
+Physical Safari, iPhone, and Wi-Fi/cellular checks still need separate recorded results.

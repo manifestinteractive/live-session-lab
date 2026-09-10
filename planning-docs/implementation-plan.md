@@ -1,8 +1,8 @@
 # Implementation plan
 
-Phase 1 received human acceptance. Phase 2 now uses two signed participant places and fixed identities without a database.
-Physical-device acceptance and human review remain pending.
-Phases 3 and 4 are unstarted.
+Phase 2 code received human acceptance and was committed. Phase 3 implements resilience and privacy.
+The user reported successful desktop/iPhone streaming. Remaining physical-device checks and Phase 3 human review are pending.
+Phase 4 is unstarted.
 Complete one requested phase, then stop for human review.
 Use [Architecture](architecture.md) for interfaces and [Validation](validation.md) for evidence requirements.
 

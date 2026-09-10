@@ -1,8 +1,8 @@
 # Validation
 
-Status: Phase 1 received human acceptance on 2026-09-10. Phase 2 integration is implemented.
-Phase 2 validation is recorded below. Physical-device acceptance and human review remain pending.
-Phases 3 and 4 are unstarted.
+Status: Phase 2 code received human acceptance and was committed. Phase 3 resilience and privacy are implemented.
+The user reported successful desktop/iPhone streaming. Remaining physical-device checks and Phase 3 human review are pending.
+Phase 4 is unstarted.
 Planned cases below are not test results.
 
 ## Automated checks
@@ -40,6 +40,7 @@ Record actual device models, OS versions, browser versions, network arrangement,
 
 | Scenario                  | Required coverage                                                                        | Status  |
 | ------------------------- | ---------------------------------------------------------------------------------------- | ------- |
+| Initial physical streaming | Desktop and physical iPhone, as reported by the user.                                  | Passed, user report |
 | Two-way audio/video       | Mac Chrome + iPhone Safari; Mac Safari + iPhone Safari.                                  | Not run |
 | Different networks        | Mac on Wi-Fi and iPhone on cellular, when available.                                     | Not run |
 | Pre-join and cleanup      | Preview, cancel, join, leave, and verify capture indicators stop.                        | Not run |
@@ -300,3 +301,105 @@ Mac Chrome/Safari and physical iPhone call acceptance remain Not run. A trusted 
 Human review is pending for the revised invitation behavior and physical-device checks. Phases 3 and 4 remain unstarted.
 Suggested commit message: `fix: use participant invitations for database-free calls`.
 No commit, push, or deployment occurred.
+
+### Phase 2 human review and Phase 3 authorization: 2026-09-10
+
+The user committed the database-free revision and instructed the coding agent to continue.
+This accepts the Phase 2 code increment and authorizes Phase 3. It does not supply physical-device results.
+
+### Phase 3 resilience and privacy: 2026-09-10
+
+Revision: uncommitted Phase 3 changes after the user's committed Phase 2 revision.
+Environment: macOS arm64, Node.js 26.8.1, npm 11.19.0. No new package dependencies were added.
+
+| Check | Actual result |
+| --- | --- |
+| `npm run ai:verify` | Passed scaffolding checks, lint, type checking, 51 unit/component tests, 63 browser tests, and production build. |
+| Permission denial | Passed Chromium permission denial applied to its isolated browser context. The application checked the denied state before requesting capture. No fake permission grants were used in this case. |
+| Error recovery | Passed injected denied, missing, busy, and unsupported-constraint cases in Chromium and WebKit. Fixed messages received focus and did not expose synthetic private error text. |
+| Capture recovery | Passed a camera failure followed by successful synthetic capture and alert removal. |
+| Cancelled setup | Passed cancellation of stalled admission and unanswered permission requests. Late camera results stopped; the new setup could enable audio while the old camera request remained unanswered. |
+| Device state | Passed an ended input followed by SDK restart in a focused lifecycle test. Device refresh and a simulated device-change event requested no capture. |
+| Privacy headers | Passed assertions for no-referrer, frame-ancestor restrictions, and same-origin capture permissions. |
+| Browser accessibility | Passed existing layout/axe checks plus error-state scans. Error focus and enabled recovery controls were checked. |
+
+Initial error injection was unstable in WebKit. The fixture now waits for setup and overrides the method on the instance and prototype.
+The first Chromium denial command targeted the default context; it now targets the isolated context and verifies the denied state.
+Without that correction, this environment's capture call returned NotSupportedError. Those earlier runs were not accepted as permission-denial evidence.
+
+SDK source review showed that device enumeration can await a global pending-capture promise.
+The application now uses the browser's permission-free enumeration API so a reset does not wait on a disposed controller.
+A browser regression test covers audio capture while the earlier camera request is still unanswered.
+
+#### Live recovery and visual inspection
+
+`npm run test:live -- --recovery` passed against the user-confirmed free LiveKit project.
+The command used isolated Chromium contexts and synthetic capture devices. It exercised actual provider transport.
+
+| Check | Actual result |
+| --- | --- |
+| Audio-only participation | Both cameras turned off. Video elements were removed and inbound audio RTP bytes continued increasing in both directions. |
+| SDK recovery | Browser network emulation and explicit signaling socket closure triggered the SDK reconnection state. Leave remained enabled. Media controls stayed disabled until reconnection completed. The restored session received further inbound audio. |
+| Existing live behavior | Bidirectional video decoding, mute controls, invitation replacement, leave/rejoin, initial active-room deletion, and concurrent rejoin passed again. |
+| Provider metadata | The recreated room's configuration remained absent from room listing. Identity admission does not depend on this listing. Administrative deletion of a recreated active room remains unverified. |
+| Cleanup | The live command closed its contexts. A separate provider query returned zero active rooms. The enabled local process stopped. The review server restarted with admission disabled. `.env.local` remained unchanged. |
+
+The first recovery run checked for zero video elements before turning off the second camera.
+The assertion order was corrected. The final run passed with both cameras off before that check.
+This simulated interruption proves SDK signaling recovery. It does not prove physical network handoff or every media transport failure.
+
+Playwright MCP captured nine Phase 3 setup and recovery screenshots. The agent viewed all nine.
+They cover widths of 320, 390, 768, and 1440 pixels, landscape, 200% root text size, permission failure, pending capture, and setup reset.
+Messages remained readable and controls stayed within the page width. The MCP session reported zero console errors or warnings.
+The agent also viewed the live reconnection and mobile audio-only screenshots.
+Leave remained visible during reconnection. Mobile call controls wrapped within their panel and remained near the viewport bottom.
+The first MCP inspection attempts used an unsupported tool name and an outdated click argument.
+The final inspection used the installed server's tool schema and completed successfully.
+Raw screenshots and synthetic result records remain under ignored `artifacts/`.
+
+#### Human review and remaining checks
+
+Review the permission recovery messages, setup cancellation, and call controls before accepting Phase 3.
+Physical Mac Chrome/Safari and iPhone Safari checks remain Not run.
+Actual speaker quality, physical device changes, Wi-Fi/cellular calls, and physical network interruption remain Not run.
+A trusted HTTPS address is still required for iPhone capture. No deployment or certificate trust changes occurred.
+Phase 3 implementation and automated validation are ready for review. Physical-device acceptance remains incomplete.
+Phase 4 remains unstarted. No commit, push, or deployment occurred.
+Suggested commit message: `feat: add call recovery and privacy controls`.
+
+### Local network testing setup: 2026-09-10
+
+The user requested local network access for phone invitations. This is a testing setup change, not Phase 4 deployment.
+Added `lan:setup`, `dev:lan`, and `invite:lan`. The development server binds to all IPv4 interfaces with HTTPS.
+The two LAN commands load the same ignored origin configuration. `.env.local` and existing certificate trust settings remain unchanged.
+
+| Check | Actual result |
+| --- | --- |
+| Certificate setup | Passed using the installed mkcert and its existing CA. The leaf certificate covers the selected local IPv4 address. Only the public CA certificate was copied for phone installation. |
+| Setup input | A loopback address was rejected. Setup accepts an address assigned to a non-loopback IPv4 interface. |
+| HTTPS response | The LAN address returned HTTP 200 with CA validation enabled. |
+| Browser access | Isolated Chromium loaded and hydrated the private call entry page without certificate bypass. It reported a secure context and an available capture API, with zero page errors. No device capture was requested. |
+| Invitations | Synthetic-secret command validation produced two distinct invitations with the configured LAN HTTPS origin. Credentials were not printed in the result record. |
+| Admission origin | The LAN origin reached invitation validation and rejected a synthetic invalid invitation with 401. A localhost origin received 403. The response used no-store. No provider call occurred. |
+| Repository checks | Script syntax, lint, type checking, scaffolding checks, and documentation links passed. Certificates and LAN configuration are ignored by Git. |
+
+The first launcher passed Node env-file flags directly to Next.js. Its development worker rejected those flags in NODE_OPTIONS.
+The launcher now loads the files and starts a child process with the resulting environment.
+A restricted development process reported filesystem watcher errors. It was stopped; the approved local process started without those errors.
+The first browser probe used the system cache path. The final probe used the repository's installed browser and passed.
+An initial HTTP probe targeted a nonexistent route; the corrected `/api/token` checks passed as recorded above.
+
+The HTTPS development server remains running with admission enabled for the user's requested local testing.
+Physical iPhone certificate installation and trust remain pending. Phone connectivity and physical media tests remain Not run.
+The full application suite was not repeated for this local tooling change. Earlier Phase 3 results remain recorded above.
+No commit, push, public tunnel, or deployment occurred.
+
+
+### User-reported physical streaming: 2026-09-10
+
+After the local HTTPS setup, the user reported that the desktop and iPhone both streamed with no issues.
+Result: Passed for this initial physical-device streaming check, based on the user's report.
+The agent did not observe the physical devices. Device models, OS versions, and browser names and versions were not supplied.
+Separate audio quality results and the required Chrome/Safari browser combinations were not reported.
+The remaining physical-device cases in the matrix stay Not run. This result does not establish failure recovery or cellular coverage.
+Earlier Not run entries describe the state before this user report and remain as historical records.

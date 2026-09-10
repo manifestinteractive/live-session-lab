@@ -103,7 +103,8 @@ Only Join posts it to the same-origin endpoint. The issued token is passed direc
 A reload requires reopening the invitation. Public `/` and `/room` remain disconnected layout previews.
 
 `src/lib/call-session.ts` owns preview tracks created by the official browser SDK.
-Explicit button actions start capture. Device enumeration after an action does not request additional permissions.
+Explicit button actions start capture. Browser device enumeration after an action does not request additional permissions.
+It bypasses the SDK's pending-capture wait so a reset setup does not depend on an earlier unanswered request.
 Join publishes the existing preview tracks to the connected room. It does not acquire replacement tracks.
 The SDK owns tracks enabled after joining. Leave disconnects with `stopTracks: true` and stops all retained preview tracks.
 A generation counter invalidates late capture and join results after cancellation. Late tracks are stopped immediately.
@@ -191,3 +192,30 @@ Strict device rejection, approved device transfer, and appointment records are o
 The remaining planned phases do not require a database. Reconsider persistent state only if the product scope changes.
 Retain `maxParticipants: 2` as a secondary setting, not the sole admission boundary.
 Do not claim instantaneous cross-region replacement or stronger guarantees than the provider and recorded tests establish.
+
+## Phase 3 recovery and privacy
+
+The client checks known denied permissions before capture, where the browser supports that query.
+Unsupported queries fall back to the SDK capture request. Error categories map to fixed messages; raw browser errors are not displayed.
+Missing and busy inputs have recovery instructions. Audio-only and listening-only modes use observed SDK state.
+
+Cancel setup disposes the current controller and creates a new browser Room while retaining the invitation.
+It clears the temporary name and stops owned capture. A late permission result is stopped by the disposed controller.
+The application cannot dismiss a native permission prompt. This limitation is explicit in the interface.
+The token POST times out after 15 seconds. There is no application retry loop.
+
+Device changes refresh input choices where the browser emits the event. A manual refresh remains available.
+Track-ended notices clear when the SDK restarts the track. SDK behavior owns recovery of published media.
+Connection feedback distinguishes connecting, reconnecting, and disconnected states. Connection quality comes from the SDK hook.
+The application does not infer bandwidth or invent latency measurements.
+
+Errors receive keyboard focus. Session transitions focus the heading. Active media controls stay near the viewport edge.
+Leave remains available while a device operation is pending; it can dispose that controller and return to setup.
+
+Response headers disable referrers and framing, restrict camera/microphone delegation to the same origin, and disable screen capture.
+The CSP restricts framing, object content, and base URLs. It is not a full script-source policy or a claim of XSS protection.
+
+References: [SDK connection recovery](https://docs.livekit.io/intro/basics/connect/),
+[connection quality hook](https://docs.livekit.io/reference/components/react/hook/useconnectionqualityindicator/),
+[browser capture requests](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia), and
+[device changes](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/devicechange_event).

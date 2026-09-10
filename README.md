@@ -2,8 +2,10 @@
 
 An independent experiment with WebRTC and AI-assisted development.
 The application implements private browser calls through the official LiveKit SDKs.
-Phase 2 uses two participant invitations with fixed identities and no database.
-Synthetic audio/video and invitation replacement passed. Physical Mac/iPhone acceptance remains unverified.
+The demo uses two participant invitations with fixed identities and no database.
+Phase 3 adds permission recovery, setup cancellation, device refresh, and SDK connection feedback.
+Synthetic audio/video and invitation replacement passed. The user also reported successful desktop/iPhone streaming.
+The remaining physical-device acceptance cases are pending.
 
 The public introduction and room preview remain disconnected demonstrations.
 Private invitations open `/call`, where participants can preview devices and request admission.
@@ -57,10 +59,59 @@ The supported validity is 1 to 1,440 minutes. Each command creates a random room
 The command only signs invitations; it does not create a provider room or enable admission.
 Earlier shared invitations are invalid. Run the command again to create participant-specific invitations.
 
+### Test from a phone on the local network
+
+Use the Mac and phone on the same local network. Phone capture requires trusted HTTPS.
+Binding to `0.0.0.0` allows network access, but it is not an address to put in an invitation.
+This setup uses [Next.js development HTTPS](https://nextjs.org/docs/app/api-reference/cli/next#using-https-during-development).
+Install [mkcert](https://github.com/FiloSottile/mkcert) first if it is unavailable. Configure its local CA with `mkcert -install`.
+That command changes the Mac's certificate trust settings. The repository's setup command does not install trust.
+
+Replace `YOUR_LAN_IP` with the Mac's local IPv4 address:
+
+```sh
+npm run lan:setup -- YOUR_LAN_IP
+```
+
+The command creates ignored certificates under `.cache/lan/` and an ignored `.env.lan.local` file.
+It preserves `.env.local`. Both LAN commands use the same HTTPS origin to keep invitation exchange valid.
+An exported `APP_ORIGIN` takes precedence over these files; unset it when using this workflow.
+Repeat setup and create new invitations if the Mac's IP address changes.
+
+AirDrop only `.cache/lan/rootCA.cer` to the iPhone. Install its downloaded certificate profile in Settings.
+Then enable it under Settings > General > About > Certificate Trust Settings.
+See [Apple's certificate trust instructions](https://support.apple.com/en-us/102390).
+Never share `server-key.pem` or `rootCA-key.pem`. Remove the test certificate profile when testing ends.
+
+Stop any server on port 3000, then start controlled calls:
+
+```sh
+ADMISSION_ENABLED=true npm run dev:lan
+```
+
+In another terminal, create the private links:
+
+```sh
+npm run invite:lan
+```
+
+Open a different generated invitation on each device. Use the generated HTTPS address on the Mac too.
+The server binds to `0.0.0.0:3000`. Allow Node through the Mac firewall if prompted for local network access.
+Do not proceed through certificate warnings; install and trust the matching local CA first.
+Local IP addresses cannot support a cellular-only test. This workflow does not deploy or open a public tunnel.
+Stop the LAN server after testing. Regular `npm run dev` and `npm run invite` retain the original local configuration.
+
+### Use the private call
+
 Open the private link. Enter a test name and explicitly enable the camera or microphone you want to share.
-Select an available input after permission is granted. Join with both devices off if you only want to listen.
+Select an available input after permission is granted. Use Refresh device list after connecting an input.
+Permission errors give a specific recovery action. You can keep the camera off for an audio-only call.
+Cancel setup stops owned capture and resets the form while preserving the invitation. Close any unanswered browser permission prompt.
+The browser cannot cancel that prompt for the application; a late capture result is stopped when it arrives. Join with both devices off if you only want to listen.
 If audio playback is blocked, select Enable audio playback. Leave stops capture; rejoin requires an unexpired invitation.
 Reloading clears the invitation. Reopen the original private link to return after a reload.
+Connection details shows SDK connection quality, or Unavailable when no score is available.
+LiveKit handles reconnection. Media can pause during recovery, and Leave remains available.
 Invitation expiry prevents new admission. It does not end an existing connection.
 
 The server issues only two stable identities per room, based on signed participant places.
@@ -86,6 +137,7 @@ It needs the configured local application running with admission enabled and con
 For controlled local validation, start `ADMISSION_ENABLED=true npm start` after building. Keep `.env.local` disabled.
 Confirm the free account plan before this test. It creates a temporary room and attempts cleanup in `finally`.
 It uses synthetic media in isolated Chromium contexts and checks two identities, invitation replacement, capture cleanup, and rejoin after room deletion.
+Use `npm run test:live -- --recovery` to also test audio-only media and SDK recovery after a signaling interruption.
 It writes sanitized results and synthetic screenshots under ignored `artifacts/`. Stop the enabled server after testing.
 
 Run individual checks with `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:e2e`, or `npm run build`.

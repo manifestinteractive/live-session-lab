@@ -48,3 +48,60 @@ import { expect, test } from "@playwright/test";
     await expect(page.getByRole("button", { name: "Turn camera off" })).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("button", { name: "Exit setup" }).click();
   });
+
+  test("a cancelled permission request releases its late capture result", async ({ page }) => {
+    await page.evaluate(() => {
+      const capture = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      navigator.mediaDevices.getUserMedia = constraints => new Promise(resolve => {
+        Object.defineProperty(window, "__finishPermission", { value: async () => resolve(await capture(constraints)) });
+      });
+    });
+    await page.getByRole("button", { name: "Enable camera", exact: true }).click();
+    await page.getByRole("button", { name: "Cancel setup" }).click();
+    await page.evaluate(() => (window as unknown as { __finishPermission: () => Promise<void> }).__finishPermission());
+    await expect.poll(() => page.evaluate(() => {
+      const tracks = (window as unknown as { __captureTracks: MediaStreamTrack[] }).__captureTracks;
+      return tracks.length > 0 && tracks.every(track => track.readyState === "ended");
+    })).toBe(true);
+    await expect(page.getByRole("button", { name: "Enable camera", exact: true })).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByText(/Setup reset\. Capture has stopped/)).toBeVisible();
+  });
+
+  test("camera capture recovers after a device error without retaining the alert", async ({ page }) => {
+    await page.evaluate(() => {
+      const capture = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      let first = true;
+      navigator.mediaDevices.getUserMedia = async constraints => {
+        if (first) { first = false; throw new DOMException("Synthetic device unavailable", "NotFoundError"); }
+        return capture(constraints);
+      };
+    });
+    await page.getByRole("button", { name: "Enable camera", exact: true }).click();
+    await expect(page.getByRole("alert", { name: "Action needed" })).toContainText("No camera is available");
+    await page.getByRole("button", { name: "Enable camera", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Turn camera off" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("alert", { name: "Action needed" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Exit setup" }).click();
+  });
+
+  test("reset permits audio while an earlier camera request is unanswered", async ({ page }) => {
+    await page.evaluate(() => {
+      const capture = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      navigator.mediaDevices.getUserMedia = constraints => {
+        if (!constraints?.video) return capture(constraints);
+        return new Promise(resolve => {
+          Object.defineProperty(window, "__finishCamera", { value: async () => resolve(await capture(constraints)) });
+        });
+      };
+    });
+    await page.getByRole("button", { name: "Enable camera", exact: true }).click();
+    await page.getByRole("button", { name: "Cancel setup" }).click();
+    await page.getByRole("button", { name: "Enable microphone", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Turn microphone off" })).toBeEnabled();
+    await page.evaluate(() => (window as unknown as { __finishCamera: () => Promise<void> }).__finishCamera());
+    await expect.poll(() => page.evaluate(() => {
+      const tracks = (window as unknown as { __captureTracks: MediaStreamTrack[] }).__captureTracks;
+      return tracks.some(track => track.kind === "audio" && track.readyState === "live") && tracks.filter(track => track.kind === "video").every(track => track.readyState === "ended");
+    })).toBe(true);
+    await page.getByRole("button", { name: "Exit setup" }).click();
+  });

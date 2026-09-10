@@ -4,6 +4,7 @@ import { createInvitationPair } from '../src/lib/server/invitations.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 process.env.PLAYWRIGHT_BROWSERS_PATH = process.cwd()+'/.cache/ms-playwright';
 const { chromium, expect } = await import('@playwright/test');
+const recovery = process.argv.includes('--recovery');
 let invitations, room;
 try { ({invitations,room}=await createInvitationPair(process.env.INVITATION_SIGNING_SECRET)); new URL(process.env.APP_ORIGIN); new URL(process.env.LIVEKIT_URL); }
 catch { console.error('Live test configuration is missing or invalid.'); process.exit(1); }
@@ -24,6 +25,8 @@ try {
   const context=await browser.newContext({permissions:['camera','microphone'],viewport:{width:i===1?390:1440,height:900}});
   const page=await context.newPage();pages.push(page);
   await page.addInitScript(()=>{
+   const NativeSocket=window.WebSocket;const sockets=[];Object.defineProperty(window,'__signalSockets',{value:sockets});
+   window.WebSocket=class extends NativeSocket {constructor(...args){super(...args);sockets.push(this);}};
    const NativePeer=window.RTCPeerConnection;const peers=[];Object.defineProperty(window,'__testPeers',{value:peers});
    window.RTCPeerConnection=class extends NativePeer {constructor(...args){super(...args);peers.push(this);}};
    const tracks=[];Object.defineProperty(window,'__captureTracks',{value:tracks});
@@ -66,6 +69,37 @@ try {
  results.push('Camera mute and unmute propagated to the remote interface; microphone control reflected SDK mute state.');
  await pages[0].screenshot({path:'artifacts/playwright/phase2-live-desktop.png',fullPage:true});
  await pages[1].screenshot({path:'artifacts/playwright/phase2-live-mobile.png',fullPage:true});
+ if(recovery) {
+  stage='audio-only participation';
+  await pages[0].getByRole('button',{name:'Enable microphone',exact:true}).click();
+  for(const page of pages.slice(0,2)) {
+   await page.getByRole('button',{name:'Turn camera off'}).click();
+   await expect(page.getByText('Audio-only call. Your camera is off.',{exact:true})).toBeVisible();
+  }
+  for(const page of pages.slice(0,2)) await expect(page.locator('video')).toHaveCount(0);
+  const audioBytes=page=>page.evaluate(async()=>{
+   let bytes=0;for(const peer of window.__testPeers){if(peer.connectionState==='closed')continue;const stats=await peer.getStats();stats.forEach(report=>{if(report.type==='inbound-rtp'&&report.kind==='audio')bytes+=report.bytesReceived??0;});}return bytes;
+  });
+  for(const page of pages.slice(0,2)) {
+   const baseline=await audioBytes(page);
+   await expect.poll(()=>audioBytes(page),{timeout:10000}).toBeGreaterThan(baseline);
+  }
+  results.push('Both participants switched to audio-only mode. Video elements were removed and inbound audio RTP bytes continued increasing in both directions.');
+  stage='signaling interruption';
+  await pages[0].context().setOffline(true);
+  await pages[0].evaluate(()=>window.__signalSockets.filter(socket=>socket.readyState===1).forEach(socket=>socket.close()));
+  await expect(pages[0].getByText('Connection interrupted. LiveKit is reconnecting. Media may pause; you can leave at any time.',{exact:true})).toBeVisible({timeout:15000});
+  await expect(pages[0].getByRole('button',{name:'Leave session'})).toBeEnabled();
+  await expect(pages[0].getByRole('button',{name:'Turn microphone off'})).toBeDisabled();
+  await pages[0].screenshot({path:'artifacts/playwright/phase3-reconnecting.png',fullPage:true});
+  await pages[0].context().setOffline(false);
+  await expect(pages[0].getByText('Connection restored.',{exact:true})).toBeVisible({timeout:45000});
+  await expect(pages[0].getByRole('button',{name:'Turn microphone off'})).toBeEnabled();
+  const resumedBytes=await audioBytes(pages[0]);
+  await expect.poll(()=>audioBytes(pages[0]),{timeout:15000}).toBeGreaterThan(resumedBytes);
+  results.push('After browser network emulation and signaling closure, the SDK showed reconnection, kept Leave available, and restored the session. Inbound audio continued afterward.');
+  await pages[1].screenshot({path:'artifacts/playwright/phase3-audio-only-mobile.png',fullPage:true});
+ }
  stage='invitation reuse';
  await pages[2].getByRole('button',{name:'Join session'}).click();
  await expect(pages[2].getByRole('button',{name:'Leave session'})).toBeVisible({timeout:30000});
@@ -119,6 +153,6 @@ try {
  catch { results.push('Browser cleanup failed; verify that the test browser stopped.'); process.exitCode=1; }
  try {await api.room.deleteRoom(room);results.push('The temporary provider room was deleted.');}
  catch (error) {if (['not_found','not-found'].includes(error.code)) results.push('No temporary provider room remained.'); else { console.error('Temporary room cleanup requires verification. Provider status:', ['unauthenticated','permission_denied','unavailable','not_found'].includes(error.code)?error.code:'unclassified'); process.exitCode=1; }}
- await writeFile('artifacts/live-provider-results.json',JSON.stringify({date:new Date().toISOString(),results,passed:process.exitCode!==1},null,2));
+ await writeFile(recovery?'artifacts/live-recovery-results.json':'artifacts/live-provider-results.json',JSON.stringify({date:new Date().toISOString(),results,passed:process.exitCode!==1},null,2));
  for(const result of results)console.log(result);
 }

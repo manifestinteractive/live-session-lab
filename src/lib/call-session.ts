@@ -7,6 +7,7 @@ export type PreviewTrack = LocalAudioTrack | LocalVideoTrack;
 export class CallSession {
   readonly room: Room;
   readonly tracks = new Map<InputKind, PreviewTrack>();
+  endedDevice: InputKind | null = null;
   private generation = 0;
   private disposed = false;
   private busy = false;
@@ -20,6 +21,7 @@ export class CallSession {
   private releasePreview = () => {
     for (const track of this.tracks.values()) track.stop();
     this.tracks.clear();
+    this.endedDevice = null;
     this.changed();
   };
 
@@ -32,6 +34,7 @@ export class CallSession {
     if (this.busy || this.disposed) return;
     this.busy = true;
     const generation = this.generation;
+    this.endedDevice = null;
     try {
       if (this.room.state === ConnectionState.Connected) {
         const local = this.room.localParticipant;
@@ -47,7 +50,16 @@ export class CallSession {
           ? await createLocalVideoTrack({ resolution: { width: 640, height: 360, frameRate: 24 } })
           : await createLocalAudioTrack();
         if (this.disposed || generation !== this.generation) { track.stop(); return; }
-        track.on(TrackEvent.Ended, this.changed);
+        track.on(TrackEvent.Ended, () => {
+          if (this.disposed || this.tracks.get(kind) !== track) return;
+          this.endedDevice = kind;
+          this.changed();
+        });
+        track.on(TrackEvent.Restarted, () => {
+          if (this.disposed || this.tracks.get(kind) !== track) return;
+          this.endedDevice = null;
+          this.changed();
+        });
         this.tracks.set(kind, track);
       }
     } finally { this.busy = false; this.changed(); }

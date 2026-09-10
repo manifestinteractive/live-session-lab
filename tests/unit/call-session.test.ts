@@ -7,7 +7,7 @@ vi.mock("livekit-client", async () => {
   const { EventEmitter } = await import("node:events");
   return {
     ConnectionState: { Connected: "connected", Disconnected: "disconnected" },
-    RoomEvent: { Disconnected: "disconnected" }, TrackEvent: { Ended: "ended" },
+    RoomEvent: { Disconnected: "disconnected" }, TrackEvent: { Ended: "ended", Restarted: "restarted" },
     Track: { Source: { Camera: "camera", Microphone: "microphone" } },
     LogLevel: { silent: 5 }, setLogLevel: vi.fn(),
     createLocalAudioTrack: sdk.microphone, createLocalVideoTrack: sdk.camera,
@@ -37,6 +37,21 @@ beforeEach(() => {
 });
 
 describe("LiveKit capture ownership", () => {
+  it("reports an ended input and clears the notice when the SDK restarts it", async () => {
+    const session = new CallSession(vi.fn());
+    const media = track();
+    sdk.camera.mockResolvedValueOnce(media);
+    await session.toggle("camera");
+    media.mediaStreamTrack.readyState = "ended";
+    media.emit("ended");
+    expect(session.endedDevice).toBe("camera");
+    expect(session.enabled("camera")).toBe(false);
+    media.mediaStreamTrack.readyState = "live";
+    media.emit("restarted");
+    expect(session.endedDevice).toBeNull();
+    expect(session.enabled("camera")).toBe(true);
+    session.dispose();
+  });
   it("starts with no capture and stops preview when disabled", async () => {
     const session = new CallSession(vi.fn());
     expect(sdk.camera).not.toHaveBeenCalled();
