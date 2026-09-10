@@ -20,7 +20,7 @@ Use shared theme variables and responsive layouts. Add only required components.
 Use LiveKit SDK state for media controls, including controls built with shadcn/ui.
 Use LiveKit Cloud Build and Vercel Hobby only. Verify free limits before deployment; accept service loss at those limits.
 Limit the first release to two participants with private invitations and test conversations.
-Use npm and keep `package-lock.json` synchronized. This package currently contains development tools only.
+Use npm and keep `package-lock.json` synchronized. The package contains the Phase 1 application and development tools.
 Verify current official documentation and compatible versions before adding application dependencies.
 Keep SDK integration in a few components and server modules.
 This is human-to-human video. Do not use an AI voice-agent starter.
@@ -48,9 +48,9 @@ Read `.agents/skills/phase-delivery/SKILL.md` when implementing a requested phas
 Run `npm run ai:check` for scaffolding changes.
 Run `npm run ai:shadcn:smoke` after changing shadcn MCP tooling.
 Run `npm run ai:mcp:smoke` after changing browser tooling.
-Once the app exists, use `npm run ai:verify` for lint, type checks, tests, and build.
+Use `npm run ai:verify` for lint, type checks, tests, and build.
 Use `planning-docs/validation.md` for acceptance cases and actual results, including Mac and iPhone checks.
-Add real `lint`, `typecheck`, `test`, `test:e2e`, and `build` scripts during Phase 1.
+Keep `lint`, `typecheck`, `test`, `test:e2e`, and `build` as real application checks.
 Missing app commands are an incomplete setup, never a passing application check.
 Automated browser tests and fake devices do not prove real media transport.
 Record physical-device checks separately from browser automation.
@@ -61,3 +61,13 @@ When the user requests delegation, use `admission_reviewer` for token and media 
 Use `browser_reviewer` for independent UI inspection. Give each agent a bounded task.
 Only one agent controls a given Playwright MCP browser at a time.
 Review agents inherit the selected model, including GPT-6 Astra. Do not silently substitute another model.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

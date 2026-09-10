@@ -1,22 +1,24 @@
 # AI development setup
 
-Status: planning and scaffolding only. Phase 1 has not started.
+Status: Phase 1 is implemented and awaits human review.
 The user selected Codex with GPT-6 Astra. Repository configuration preserves the selected model and permission settings.
 The [development plan](../planning-docs/README.md) defines the application and phase boundaries.
 
 ## Setup
 
-Use Node.js 22 or newer and npm. Run these commands from the repository root:
+Use Node.js 22.12.0 or newer and npm. Run these commands from the repository root:
 
 ```sh
 npm ci
 npm run ai:browser:install
+npm run test:browser:install
 npm run ai:check
 npm run ai:mcp:smoke
 npm run ai:shadcn:smoke
 ```
 
-The installer downloads the matching Chromium build into ignored `.cache/ms-playwright/`.
+The MCP installer downloads its matching Chromium build into ignored `.cache/ms-playwright/`.
+The test installer downloads Chromium and WebKit for the separate application test package.
 If the default npm cache is unavailable, prefix npm commands with `npm_config_cache=.cache/npm`.
 No application credentials are needed for these checks.
 
@@ -42,6 +44,7 @@ The Playwright launcher uses the locked local package. It does not download a ne
 Version 0.0.80 of Playwright MCP depends on Playwright 1.63.0-alpha-2026-08-31. The lockfile preserves this dependency.
 Use the matching browser installed by the script. Test MCP upgrades before changing the lockfile.
 The launcher expects Codex to start from the repository root.
+Each browser installer resolves Playwright from its owning package to prevent version mismatches.
 Remote documentation servers require network access. They do not manage LiveKit Cloud resources.
 Server configuration follows [Microsoft's Playwright MCP documentation](https://github.com/microsoft/playwright-mcp) and [LiveKit's documentation](https://docs.livekit.io/reference/developer-tools/docs-mcp/).
 
@@ -63,8 +66,8 @@ The upstream [MIT license](licenses/shadcn-skill.txt) is included. Recheck the s
 
 Repository instructions select the official `@shadcn` registry and replace upstream `npx shadcn@latest` examples with the pinned CLI command.
 Run `npm run ai:shadcn -- info --json` explicitly for project context; do not assume inline commands in skill text executed.
-Phase 1 will create `components.json` and initialize the application. Until then, project-specific component context is incomplete.
-The MCP can already connect and search the official registry without that configuration.
+Phase 1 created `components.json` with the Base UI `base-nova` preset and the official registry.
+The generated component source lives in `src/components/ui/`.
 
 The tested MCP search response contains `[object Promise]` in generated add-command fields.
 Use the pinned CLI directly for component changes, such as `npm run ai:shadcn -- add @shadcn/button` during authorized application work.
@@ -79,10 +82,10 @@ The smoke check verifies registry search; it does not claim component installati
 | `npm run ai:docs:smoke`            | Connection and tool discovery for both documentation servers.                                                    |
 | `npm run ai:shadcn:smoke`          | shadcn MCP connection, tool discovery, and a read-only search for the official button component.                 |
 | `npm run ai:shadcn -- <arguments>` | Run the pinned shadcn CLI. Mutating commands remain limited to the authorized phase.                             |
-| `npm run ai:verify`                | Application lint, type checks, tests, browser tests, and production build, once added.                           |
+| `npm run ai:verify`                | Scaffolding, lint, type checks, unit tests, browser tests, and production build.                           |
 
-`ai:verify` fails while application commands are missing. It cannot report the scaffolding as a passing application.
-During Phase 1, add real `lint`, `typecheck`, `test`, `test:e2e`, and `build` commands to the existing package.
+`ai:verify` runs the real Phase 1 application commands and fails if any command fails or is missing.
+The browser suite owns port 3100. Stop other development servers before running it.
 Keep automated browser tests separate from exploratory MCP checks. Do not use the tooling fixture as an application test.
 Keep screenshots and traces in ignored `artifacts/`. Use synthetic data and exclude credentials from evidence.
 The browser workflow requires the agent to view screenshots, not merely save them.
@@ -108,10 +111,16 @@ Validated on 2026-09-10 using macOS arm64, Node.js 26.8.1, npm 11.19.0, and Code
 Chromium failed to launch inside the restricted shell sandbox. The browser check passed with approved local process access.
 The smoke script uses the installed MCP tool schema, including `target` for clicks and `scale` for screenshots.
 No browser sandbox protections were disabled in repository configuration.
-These results validate the tooling fixture only. No application, LiveKit call, or physical-device check exists yet.
+These historical results validate the tooling fixture only. At that point, no application or physical-device check existed.
 The new MCP tools are configured for subsequent Codex sessions; this session verified them through an MCP client script.
 Native hook activation and optional agent spawning were not exercised. Review the hook through `/hooks` in a new Codex session.
 No commit, push, or deployment occurred.
 
 The table above records the initial scaffolding checks. It does not claim that later changes reran those checks.
 See the [validation record](../planning-docs/validation.md) for subsequent planning and application results.
+
+## Next.js local documentation
+
+Next.js 16.3.4 includes versioned guides under `node_modules/next/dist/docs/`.
+Read the relevant installed guide before framework changes. The development server also adds its official guidance block to `AGENTS.md`.
+That generated block is retained unchanged. It contains upstream wording and punctuation.

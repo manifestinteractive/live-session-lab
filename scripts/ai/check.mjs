@@ -10,6 +10,7 @@ const read = (path) => readFileSync(resolve(root, path), 'utf8');
 const pkg = JSON.parse(read('package.json'));
 const lock = JSON.parse(read('package-lock.json'));
 assert.deepEqual(lock.packages[''].devDependencies, pkg.devDependencies, 'Lockfile dependencies differ from package.json');
+assert.deepEqual(lock.packages[''].dependencies, pkg.dependencies, 'Lockfile application dependencies differ from package.json');
 const config = parse(read('.codex/config.toml'));
 const markdownFiles = (directory) => readdirSync(resolve(root, directory), { withFileTypes: true })
   .flatMap((entry) => {

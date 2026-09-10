@@ -77,3 +77,13 @@ It does not revoke issued participant tokens or end existing calls. Keep admissi
 
 The Phase 4 guide must supply exact, verified operator commands and hosting steps for shutdown and resource removal.
 Document separate removal of the Vercel deployment and LiveKit resources when testing ends.
+
+## Phase 1 data handling
+
+The disconnected interface does not request capture permissions, enumerate devices, or connect to LiveKit.
+The temporary display-name field is not submitted. The application does not copy it to browser storage or cookies.
+Reloading or leaving the setup clears the field in the tested browsers. Browser extensions and browser-managed state remain outside application control.
+The interface loads no external fonts, analytics, or provider resources.
+Local Next.js development tooling processes page requests. A future deployment can also generate provider request logs.
+The application needs no credentials to run Phase 1. `.env.example` contains placeholders for later integration.
+`ADMISSION_ENABLED=false` records the future default; no admission endpoint exists to enable in Phase 1.

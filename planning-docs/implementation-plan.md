@@ -1,6 +1,7 @@
 # Implementation plan
 
-All application phases are unstarted. Complete one requested phase, then stop for human review.
+Phase 1 is implemented and awaits human review. Phases 2 through 4 are unstarted.
+Complete one requested phase, then stop for human review.
 Use [Architecture](architecture.md) for interfaces and [Validation](validation.md) for evidence requirements.
 
 ## Phase 1: Foundation

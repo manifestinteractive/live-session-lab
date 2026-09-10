@@ -1,10 +1,14 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { createRequire } from 'node:module';
 
 export const root = fileURLToPath(new URL('../../', import.meta.url));
 const installing = process.argv[2] === 'install';
-const cli = resolve(root, installing ? 'node_modules/playwright/cli.js' : 'node_modules/@playwright/mcp/cli.js');
+const requireMcp = createRequire(import.meta.resolve('@playwright/mcp'));
+const cli = installing
+  ? resolve(dirname(requireMcp.resolve('playwright/package.json')), 'cli.js')
+  : resolve(root, 'node_modules/@playwright/mcp/cli.js');
 const args = installing
   ? ['install', 'chromium']
   : ['--browser', 'chromium', '--headless', '--isolated', '--output-dir', resolve(root, 'artifacts/playwright')];

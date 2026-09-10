@@ -1,6 +1,7 @@
 # Validation
 
-Status: planning and AI scaffolding only. Application Phases 1 through 4 are unstarted.
+Status: Phase 1 implementation and automated validation passed. Human review is pending.
+Phases 2 through 4 are unstarted.
 Planned cases below are not test results.
 
 ## Automated checks
@@ -19,8 +20,8 @@ Use Vitest for focused unit/component checks and Playwright for repeatable brows
 Use synthetic signing secrets. Unit tests must not consume LiveKit Cloud resources.
 Mocks can validate application behavior but cannot establish provider enforcement or real media transport.
 
-Once the application exists, run `npm run ai:verify` for lint, type checks, tests, browser tests, and production build.
-The existing command fails while application scripts are missing. This is expected before Phase 1.
+Run `npm run ai:verify` for scaffolding, lint, type checks, tests, browser tests, and production build.
+The command fails if a required check fails or an application script is missing.
 The browser tooling fixture is not an application test.
 
 ## Visual and accessibility checks
@@ -100,6 +101,62 @@ The [setup documentation](../docs/ai-development.md#shadcnui-setup) describes th
 The check did not initialize `components.json` or install application components. Component installation remains untested until Phase 1.
 MCP access was verified through a client script. A new Codex session must load the updated MCP configuration.
 
-### Application phases
+### Phase 1 foundation: 2026-09-10
 
-No application checks or physical-device checks have run. No deployment exists.
+Revision: uncommitted Phase 1 work following the scaffolding baseline.
+Environment: macOS arm64, Node.js 26.8.1, npm 11.19.0.
+Implemented `/` and `/room` with explicit disconnected demonstrations. No admission or media service exists.
+Architecture choices remain in the separate [decision record](architecture.md#decision-record).
+
+#### Automated results
+
+| Check | Actual result |
+| --- | --- |
+| Dependency installation | Passed. npm reported zero known vulnerabilities for 695 audited lockfile packages. |
+| shadcn initialization | Passed using pinned CLI 4.21.0 and official components. `info --json` detected Next.js, Tailwind v4, and the Base UI preset. |
+| `npm run ai:verify` | Passed all required commands. |
+| `npm run lint` | Passed with no errors or warnings after correcting the PostCSS export. |
+| `npm run typecheck` | Passed route generation and TypeScript checks. |
+| `npm test` | Passed 3 focused component tests. |
+| `npm run test:e2e` | Passed 22 tests: 11 each in Chromium and WebKit with Playwright Test 1.63.0. |
+| Automated accessibility | Passed axe scans on both routes at 320, 390, 768, and 1440 pixels in both browser engines. No reported violations for the selected WCAG A/AA rule tags. |
+| Keyboard and layout | Passed skip navigation, name entry, room navigation, diagnostic disclosure, visible input outline, and 44-pixel minimum heights for visible enabled targets. |
+| Rotation and text scaling | Passed overflow checks at 844x390 and at 390 pixels with the root font size set to 200%. This does not establish physical rotation or native browser zoom behavior. |
+| Static privacy boundary | Passed browser checks for no capture/device-enumeration calls, no name submission, no external resource requests, and empty application storage/cookies. Name input cleared on exit and reload. |
+| `npm run build` | Passed. Both pages and the application icon were generated as static content. Rebuilt after adding the missing icon. |
+| `npm run ai:mcp:smoke` | Passed after updating browser package resolution. The tooling fixture screenshot was viewed. |
+| `git diff --check` | Passed. |
+
+The first browser run found a focus outline overridden by component utilities. The global focus rule now takes precedence.
+The touch-target check incorrectly counted the hidden skip link; visible targets are now checked separately from keyboard skip navigation.
+The WebKit keyboard test uses Option+Tab on macOS to include links, consistent with [Apple's keyboard documentation](https://help.apple.com/safari/mac/8.0/en.lproj/cpsh003.html).
+The corrected suite passed. Browser launches required approved local process access in the restricted environment.
+
+#### Playwright MCP visual results
+
+Passed on the local production build served with `npm start`.
+The configured Playwright MCP server was called through an MCP client script in this session.
+All 15 application screenshots below were captured and viewed. Raw evidence stays in ignored `artifacts/playwright/`.
+
+| Evidence | Actual observation |
+| --- | --- |
+| `setup-320.png`, `setup-390.png`, `setup-768.png`, `setup-1440.png` | Setup changes from stacked panels to two columns. Labels, notice text, and navigation remain readable. |
+| `room-320.png`, `room-390.png`, `room-768.png`, `room-1440.png` | Participant placeholders stack on narrow screens. The disconnected notice and exit action remain visible. |
+| `setup-landscape.png`, `room-landscape.png` | Both layouts remain usable at 844x390 with vertical scrolling. |
+| `setup-text-200.png`, `room-text-200.png` | Text reflows without horizontal page overflow. Native input and disabled select text can truncate within their controls. Labels and help text remain outside the controls. |
+| `skip-focus.png`, `input-focus.png`, `room-details.png` | Skip navigation and input focus are visible. Connection details opens and reports no SDK connection. |
+
+Production inspection initially found a missing browser icon request. Added `src/app/icon.svg` and rebuilt.
+The final MCP session reported zero console errors or warnings. Inspected requests returned 200 and stayed on the local origin.
+The interface uses disabled styling for unavailable controls. Automated scans do not certify accessibility or screen-reader behavior.
+
+#### Human review and unperformed checks
+
+Human acceptance: pending. Review the visual layout, participant wording, and disconnected scope.
+Check the local setup instructions and inspect the pages in Mac Chrome and Safari.
+Physical iPhone layout, touch, rotation, and VoiceOver checks remain Not run.
+No physical-device media, HTTPS deployment, Wi-Fi/cellular call, or provider quota check ran in Phase 1.
+The physical-device matrix above remains unchanged. Live calls are outside this phase.
+
+Suggested commit message: `feat: add the Phase 1 interface foundation`.
+No commit, push, or deployment occurred. Stop here until Phase 1 receives human review.

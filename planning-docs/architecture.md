@@ -1,6 +1,7 @@
 # Architecture
 
-Status: proposed application design. No application endpoints or media integration exist yet.
+Status: Phase 1 serves the introduction and pre-join shell at `/`, and the room shell at `/room`.
+Admission endpoints and media integration remain planned. The diagram below describes the target system.
 
 ## System boundaries
 
@@ -33,6 +34,20 @@ Do not create an abstraction for hypothetical replacement video providers.
 Configure shadcn/ui and Tailwind during Phase 1 using the official instructions:
 [shadcn/ui for Next.js](https://ui.shadcn.com/docs/installation/next) and
 [Tailwind CSS for Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs).
+
+## Phase 1 implementation
+
+Next.js 16.3.4 uses React 19.3.0 and TypeScript 6.0.3.
+Tailwind CSS 4.3.3 defines responsive layouts and semantic theme variables in `src/app/globals.css`.
+The official shadcn CLI initialized the Base UI `base-nova` preset in `components.json`.
+The repository retains Button, Card, Field, Input, Badge, Alert, NativeSelect, and Empty source.
+Label and Separator are dependencies of Field. No custom registry is configured.
+
+`src/components/session-preview.tsx` contains the shared demonstration interface.
+Route modules remain small. The display-name field holds input only in the current browser document.
+Both routes show disconnected labels. Media controls and admission are disabled.
+There are no media SDKs, capture requests, admission endpoints, or provider requests in Phase 1.
+The room preview link opens a public layout demonstration. It does not admit a participant to a call.
 
 ## Planned interfaces
 
@@ -84,5 +99,15 @@ Decisions accepted on 2026-09-10. These are design choices, not test results.
 | Signed invitations without a database    | Avoid persistent participant data and another service. Individual invitation revocation is limited.             |
 | Standard encrypted transport             | Keep the first release focused on test conversations. End-to-end media encryption is outside this release.      |
 | Vercel Hobby and LiveKit Build           | Target zero service charges. Accept interruption at free limits and recheck terms before deployment.            |
+
+Phase 1 implementation decisions on 2026-09-10:
+
+| Decision | Reason and tradeoff |
+| --- | --- |
+| Native device selects | Keep the shell simple and usable on mobile. They remain disabled until device integration exists. |
+| System fonts | Avoid an external font download during builds or page loads. |
+| Public `/room` preview | Allow layout review without credentials. This route currently provides no call access. |
+| Separate Playwright versions | Use stable Playwright Test 1.63.0 and the MCP's locked alpha dependency. Resolve each browser installer from its owning package. |
+| Semantic theme and focus override | Maintain consistent contrast and visible keyboard focus after component composition. |
 
 See [Privacy and cost](privacy-and-cost.md) for data boundaries and operational limitations.

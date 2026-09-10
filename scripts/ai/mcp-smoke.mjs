@@ -27,7 +27,7 @@ if (process.argv.includes('--docs')) {
 } else {
   const server = createServer((_request, response) => {
     response.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
-    response.end('<!doctype html><html lang="en"><meta charset="utf-8"><title>AI tooling check</title><main><h1>AI tooling check</h1><p>This is a browser tooling fixture. The application is not built.</p><button type="button" onclick="this.textContent=\'Interaction confirmed\'">Check interaction</button></main></html>');
+    response.end('<!doctype html><html lang="en"><meta charset="utf-8"><title>AI tooling check</title><main><h1>AI tooling check</h1><p>This is a browser tooling fixture, separate from the application.</p><button type="button" onclick="this.textContent=\'Interaction confirmed\'">Check interaction</button></main></html>');
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   const client = createClient();
