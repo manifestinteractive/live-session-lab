@@ -1,0 +1,28 @@
+# Keep the user's selected model and permission settings.
+# Run Codex from this trusted repository. Start a new session after changes.
+
+[mcp_servers.playwright]
+enabled = true
+command = "node"
+args = ["scripts/ai/playwright.mjs"]
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+
+[mcp_servers.livekit_docs]
+enabled = true
+url = "https://docs.livekit.io/mcp"
+disabled_tools = ["submit_docs_feedback"]
+startup_timeout_sec = 30
+
+[mcp_servers.openaiDeveloperDocs]
+enabled = true
+url = "https://developers.openai.com/mcp"
+startup_timeout_sec = 30
+
+[[hooks.SessionStart]]
+matcher = "startup|resume|compact"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/scripts/ai/session-start.mjs"'
+timeout = 5

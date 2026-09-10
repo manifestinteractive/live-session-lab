@@ -141,3 +141,12 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# project files
+plan.md
+
+# Local AI and browser evidence
+artifacts/
+test-results/
+playwright-report/
+blob-report/
