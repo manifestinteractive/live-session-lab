@@ -1,7 +1,7 @@
 # Live Session Lab development plan
 
-Status: Phase 1 received human acceptance. Phase 2 integration is implemented but has a confirmed capacity failure.
-LiveKit admitted a third participant. Physical-device acceptance and human review remain pending.
+Status: Phase 1 received human acceptance. Phase 2 uses participant-specific invitations with fixed identities.
+The revised database-free flow passed synthetic live checks. Physical-device acceptance and human review remain pending.
 Phases 3 and 4 are unstarted.
 Plan date: 2026-09-10.
 
@@ -25,7 +25,8 @@ See [AI development setup](../docs/ai-development.md) for the installed developm
 The first release supports two people in a private room. The public introduction page explains the experiment and invitation requirement.
 It does not let anonymous visitors create rooms or issue their own invitations.
 
-A participant opens an invitation and enters a temporary display name.
+Each room has two different invitations, one per participant. A participant opens their invitation and enters a temporary display name.
+Reusing an invitation replaces its existing connection. This is an explicit demo tradeoff, not a strict device reservation system.
 They explicitly enable camera or microphone, preview media, select available inputs, and join.
 They can see participant presence, control their own media, leave, and rejoin while admission remains valid.
 Audio-only participation is supported. Capture devices must stop when the participant leaves or abandons preview.

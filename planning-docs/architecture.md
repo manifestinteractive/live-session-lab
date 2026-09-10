@@ -1,7 +1,7 @@
 # Architecture
 
 Status: Phase 1 serves the introduction and pre-join shell at `/`, and the room shell at `/room`.
-Phase 2 adds the private `/call` route and `POST /api/token`. Capacity acceptance failed.
+Phase 2 adds the private `/call` route and `POST /api/token`. Two signed participant places map to fixed identities.
 Synthetic media transport passed; physical-device acceptance remains unverified. See [Validation](validation.md).
 The diagram describes the target hosting. The implementation currently runs locally.
 
@@ -72,25 +72,30 @@ Return token responses with `Cache-Control: no-store`. Keep signing and API secr
 Use the validated invitation to select the room. Generate participant identities on the server.
 Grant room join, subscription, and camera/microphone publishing only. Do not grant room administration or data publishing.
 Apply the two-participant limit on every room-creation path, including room recreation after all participants leave.
-Enforce capacity through LiveKit room configuration, not a browser counter or a read-then-count admission check.
+The application can issue only two identities per room. LiveKit replaces duplicate identities.
+Keep room configuration as a secondary capacity setting. Do not add a browser counter or a read-then-count admission check.
 LiveKit exposes the room participant limit through its [RoomService API](https://docs.livekit.io/reference/other/roomservice-api/).
 
 ## Phase 2 ownership and admission
 
 `src/lib/server/invitations.mjs` signs and validates room-scoped HS256 invitations with `jose`.
 The issuer and audience are specific to this application. Invitations contain an opaque room identifier and an expiry.
-The local `scripts/operator/invite.mjs` command defaults to a generated room and one-hour validity.
+The local `scripts/operator/invite.mjs` command creates two invitations for a generated room with one-hour validity.
+Each invitation contains a signed `seat` value, either 1 or 2. Missing or invalid places are rejected, including old shared invitations.
+The server hashes a domain-separated room identifier and signed place to derive a stable identity.
+An identity is public metadata, not a credential. It stays stable after invitation renewal and signing-key rotation.
 No operator name or participant name enters the room identifier.
 
 `src/lib/server/admission.ts` validates origin, the admission flag, JSON shape, name length, and invitation claims.
 It reads at most 4,096 body bytes and rejects client-provided room or identity fields.
 It calls the official `LiveKitAPI` to create or retrieve the validated room with `maxParticipants: 2`.
 If the returned room has a different limit, admission fails closed.
-Each five-minute token also includes a room configuration with the same limit to protect automatic room recreation.
+Each five-minute token also includes the same room configuration for automatic recreation.
 Existing rooms ignore token configuration. The service response check covers that separate path.
-The design depends on LiveKit to arbitrate concurrent joins and reject a third participant.
-That dependency failed live validation. Returning `maxParticipants: 2` does not establish enforcement.
-Keep admission disabled for external use. A count read before token issuance cannot resolve concurrent admission races.
+Returning `maxParticipants: 2` does not establish enforcement; the initial provider test admitted three random identities.
+The revised design issues only two stable identities. Reusing an invitation replaces its current connection.
+The client explains this behavior and stops capture when the SDK reports a duplicate-identity disconnect.
+A count read before token issuance cannot resolve concurrent admission races and is not used.
 
 `src/components/private-call.tsx` reads and removes the URL fragment in its first client effect.
 The credential remains in a React ref. It is never written to persistent storage or rendered in the interface.
@@ -154,7 +159,7 @@ Phase 2 implementation decisions on 2026-09-10:
 | --- | --- |
 | Separate `/call` route | Keep accepted public demonstrations available while private invitations open the functional integration. |
 | `jose` 6.2.12 with HS256 | Use an established signing implementation and a server-only secret. Bearer invitations can be shared until expiry. |
-| Capacity in room creation and tokens | Request capacity on all creation paths. The provider test failed; this decision needs resolution before external use. |
+| Two signed participant places with stable identities | Preserve the database-free demo. Reuse replaces a connection instead of promising strict rejection. Room limits remain secondary. |
 | Single owner for preview tracks | Publish existing capture on join; stop retained tracks after failure or exit. |
 | Disable admission during default browser tests | Make checks independent of local credentials and prevent accidental provider usage. |
 
@@ -164,3 +169,25 @@ References: [tokens and room configuration](https://docs.livekit.io/frontends/re
 [room management](https://docs.livekit.io/intro/basics/rooms-participants-tracks/rooms/),
 [camera and microphone](https://docs.livekit.io/transport/media/publish/), and
 [React components](https://docs.livekit.io/reference/components/react/).
+
+## Capacity revision for the database-free demo
+
+Selected on 2026-09-10 after the user relaxed strict functional requirements and retained the database-free goal.
+Implementation review remains pending. Actual test outcomes belong in [Validation](validation.md).
+
+Darryn Campbell's LiveKit Community reply describes delayed room metadata synchronization between regions.
+The discussion gives no guaranteed admission delay. A participant count check cannot safely allocate simultaneous serverless requests.
+See the [LiveKit discussion](https://community.livekit.io/t/livekit-cloud-room-with-maxparticipants-2-admits-3-standard-participants/1911/2).
+
+Each room has two separate invitations. Signed participant places map to two stable identities, including after room recreation.
+LiveKit documents that only the most recent connection with a given identity can remain in a room.
+Reusing an invitation replaces its connection. It does not create a third identity.
+The pre-join interface warns about replacement; a displaced participant sees a specific notice and capture stops.
+See [participant identity rules](https://docs.livekit.io/intro/basics/rooms-participants-tracks/participants/).
+
+This is a demo with bearer invitations, not verified participant accounts or a reservation system.
+Someone who obtains an invitation can use its place until expiry, including displacing its existing connection.
+Strict device rejection, approved device transfer, and appointment records are outside the current scope.
+The remaining planned phases do not require a database. Reconsider persistent state only if the product scope changes.
+Retain `maxParticipants: 2` as a secondary setting, not the sole admission boundary.
+Do not claim instantaneous cross-region replacement or stronger guarantees than the provider and recorded tests establish.

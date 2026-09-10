@@ -2,8 +2,8 @@
 
 An independent experiment with WebRTC and AI-assisted development.
 The application implements private browser calls through the official LiveKit SDKs.
-Phase 2 is incomplete: LiveKit admitted three participants despite a configured limit of two.
-Synthetic audio/video transport passed. Physical Mac/iPhone acceptance remains unverified.
+Phase 2 uses two participant invitations with fixed identities and no database.
+Synthetic audio/video and invitation replacement passed. Physical Mac/iPhone acceptance remains unverified.
 
 The public introduction and room preview remain disconnected demonstrations.
 Private invitations open `/call`, where participants can preview devices and request admission.
@@ -29,7 +29,7 @@ System fonts require no external font service.
 
 Use a LiveKit Cloud Build project. Verify that the account uses the free plan before enabling calls.
 Copy `.env.example` to ignored `.env.local`. Enter credentials locally, never in chat or a committed file.
-Keep admission disabled for external use until the capacity failure in [Validation](planning-docs/validation.md) is resolved.
+Keep admission disabled until you are ready for controlled testing. See [Validation](planning-docs/validation.md) for current limitations.
 
 | Variable | Local configuration |
 | --- | --- |
@@ -49,11 +49,13 @@ Create an invitation from the repository root:
 npm run invite
 ```
 
-The command reads `.env` and `.env.local`, with local values taking precedence, and outputs a private URL. Share that URL with the two test participants.
+The command reads `.env` and `.env.local`, with local values taking precedence, and outputs two labeled private URLs.
+Give each participant a different URL. Reusing a URL replaces its current connection; the other participant stays connected.
 Do not put invitation URLs in issues, screenshots, logs, or chat with coding agents.
 The default validity is one hour. `npm run invite -- --minutes 15` creates a shorter invitation.
 The supported validity is 1 to 1,440 minutes. Each command creates a random room unless an existing `lsl-UUID` is supplied with `--room`.
 The command only signs invitations; it does not create a provider room or enable admission.
+Earlier shared invitations are invalid. Run the command again to create participant-specific invitations.
 
 Open the private link. Enter a test name and explicitly enable the camera or microphone you want to share.
 Select an available input after permission is granted. Join with both devices off if you only want to listen.
@@ -61,9 +63,11 @@ If audio playback is blocked, select Enable audio playback. Leave stops capture;
 Reloading clears the invitation. Reopen the original private link to return after a reload.
 Invitation expiry prevents new admission. It does not end an existing connection.
 
-The server requests `maxParticipants: 2` during room creation and in each token.
-Live testing on 2026-09-10 found three connected participants while the provider reported that limit.
-The limit is not established. The application must not be presented as an enforced two-person room.
+The server issues only two stable identities per room, based on signed participant places.
+Renewing an invitation or exchanging it concurrently cannot allocate another identity.
+LiveKit replaces the existing connection when the same identity joins again. The interface explains this behavior.
+The `maxParticipants: 2` setting remains secondary: live testing found that this setting alone did not enforce capacity.
+This demo does not promise rejection of every additional device or uninterrupted device switching.
 
 ## Check the application
 
@@ -81,7 +85,7 @@ These tests do not prove communication between physical devices.
 It needs the configured local application running with admission enabled and consumes the project's free allowance.
 For controlled local validation, start `ADMISSION_ENABLED=true npm start` after building. Keep `.env.local` disabled.
 Confirm the free account plan before this test. It creates a temporary room and attempts cleanup in `finally`.
-It uses synthetic media in isolated Chromium contexts and returns failure if a third participant enters.
+It uses synthetic media in isolated Chromium contexts and checks two identities, invitation replacement, capture cleanup, and rejoin after room deletion.
 It writes sanitized results and synthetic screenshots under ignored `artifacts/`. Stop the enabled server after testing.
 
 Run individual checks with `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:e2e`, or `npm run build`.

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { jwtVerify, SignJWT } from "jose";
-import { createInvitation, invitationAudience, invitationIssuer } from "../../src/lib/server/invitations.mjs";
+import { createInvitation, createInvitationPair, invitationAudience, invitationIssuer } from "../../src/lib/server/invitations.mjs";
 
 const { createRoom } = vi.hoisted(() => ({ createRoom: vi.fn() }));
 vi.mock("server-only", () => ({}));
@@ -48,11 +48,11 @@ describe("invitation and token admission", () => {
     expect(payload.iss).toBe(invitationIssuer);
   });
 
-  it("issues distinct five-minute identities and restricts permissions and recreation", async () => {
-    const invitation = await valid();
+  it("issues two fixed five-minute identities and restricts permissions and recreation", async () => {
+    const { invitations } = await createInvitationPair(signingSecret, { room });
     const identities: string[] = [];
     for (let i = 0; i < 2; i++) {
-      const response = await send({ invitation, displayName: "Test visitor" });
+      const response = await send({ invitation: invitations[i], displayName: "Test visitor" });
       expect(response.status).toBe(200);
       expect(response.headers.get("cache-control")).toContain("no-store");
       const result = await response.json();
@@ -66,6 +66,39 @@ describe("invitation and token admission", () => {
     expect(identities[0]).not.toBe(identities[1]);
     expect(createRoom).toHaveBeenCalledTimes(2);
     expect(createRoom).toHaveBeenCalledWith({ name: room, maxParticipants: 2, emptyTimeout: 300, departureTimeout: 20 });
+  });
+
+  it("concurrent exchanges and renewed invitations cannot allocate a third identity", async () => {
+    const { invitations } = await createInvitationPair(signingSecret, { room });
+    const responses = await Promise.all([invitations[0], invitations[1], invitations[0], invitations[1]].map(invitation => send({ invitation, displayName: "Test" })));
+    const identities = await Promise.all(responses.map(async response => {
+      expect(response.status).toBe(200);
+      return (await jwtVerify((await response.json()).token, new TextEncoder().encode(apiSecret))).payload.sub;
+    }));
+    expect(new Set(identities).size).toBe(2);
+    expect(identities[0]).toBe(identities[2]);
+    const rotatedSecret = "a-different-synthetic-signing-secret-for-tests";
+    vi.stubEnv("INVITATION_SIGNING_SECRET", rotatedSecret);
+    const renewed = await createInvitation(rotatedSecret, { room, seat: 1 });
+    const response = await send({ invitation: renewed.invitation, displayName: "Another test" });
+    expect((await jwtVerify((await response.json()).token, new TextEncoder().encode(apiSecret))).payload.sub).toBe(identities[0]);
+  });
+
+  it.each([undefined, 0, 3, "1", null])("rejects a missing or invalid signed place (%s)", async seat => {
+    const now = Math.floor(Date.now() / 1000);
+    const invitation = await new SignJWT({ room, ...(seat === undefined ? {} : { seat }) })
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" }).setIssuer(invitationIssuer).setAudience(invitationAudience)
+      .setIssuedAt(now).setExpirationTime(now + 3600).setJti("synthetic").sign(key);
+    await denied(await send({ invitation, displayName: "Test" }), 401);
+  });
+
+  it("rejects place tampering and client-selected places", async () => {
+    const original = await valid();
+    const parts = original.split(".");
+    const claims = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+    parts[1] = Buffer.from(JSON.stringify({ ...claims, seat: 2 })).toString("base64url");
+    await denied(await send({ invitation: parts.join("."), displayName: "Test" }), 401);
+    await denied(await send({ invitation: original, displayName: "Test", seat: 2 }), 400);
   });
 
   it.each(["", "https://attacker.test", "null", `${origin}/`])("rejects an untrusted or missing origin (%s)", async (untrusted) => {
@@ -99,7 +132,7 @@ describe("invitation and token admission", () => {
 
   it.each(["issuer", "audience", "algorithm", "room", "expiry"])('rejects a signed invitation with the wrong %s', async (fault) => {
     const now = Math.floor(Date.now() / 1000);
-    const invitation = await new SignJWT({ room: fault === "room" ? "personal-name" : room })
+    const invitation = await new SignJWT({ room: fault === "room" ? "personal-name" : room, seat: 1 })
       .setProtectedHeader({ alg: fault === "algorithm" ? "HS384" : "HS256", typ: "JWT" })
       .setIssuer(fault === "issuer" ? "other" : invitationIssuer).setAudience(fault === "audience" ? "other" : invitationAudience)
       .setIssuedAt(now).setExpirationTime(now + (fault === "expiry" ? 90000 : 3600)).setJti("synthetic").sign(key);

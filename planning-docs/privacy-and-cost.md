@@ -59,7 +59,7 @@ If provider terms change, disable the demo and review the plan before accepting 
 Before deployment, confirm LiveKit Build and Vercel Hobby in the actual account dashboards.
 Check any shared allowance already used by other projects. Record the date and confirmed plan names without account identifiers.
 
-Use private invitations and enforce two participants per room. Do not publish a reusable invitation in the repository or landing page.
+Issue two participant-specific invitations per room. Reuse replaces that participant's connection. Do not publish a reusable invitation in the repository or landing page.
 Use provider request protections available on the free plans. Do not claim an in-memory limiter protects all serverless instances.
 Inspect provider usage before an external test session. Treat provider-enforced free limits as the cost boundary.
 
@@ -107,13 +107,16 @@ Individual invitation revocation remains unavailable without rotating the shared
 Rotating that secret does not revoke already issued LiveKit tokens.
 
 Automated checks use synthetic secrets and mocked provider administration. Invitation-bearing browser tests do not retain traces or videos.
-No real credentials, provider resources, or physical calls were used for this implementation's automated validation.
+The default suite uses no real credentials or provider resources. The separate opt-in live command uses a confirmed free project.
+Physical-device validation remains separate.
 
 ## Phase 2 capacity limitation
 
 The live check on 2026-09-10 admitted three ordinary participants while LiveKit reported `maxParticipants: 2`.
 A separate test with one room creation and standard tokens reproduced the failure.
-The intended two-person capacity boundary is not established. Keep external admission disabled until it is resolved.
+The room setting alone did not establish capacity. The revised demo issues only two stable identities instead.
+Invitation reuse replaces its existing connection. Anyone with the invitation can use that place until expiry.
+This avoids a database, but does not provide strict device reservations or participant identity verification.
 The optional `npm run test:live` command consumes provider allowance and must run only on a confirmed free project.
 The default `npm run ai:verify` command keeps admission disabled and makes no provider calls.
 See [Validation](validation.md) for observations and unperformed physical-device checks.

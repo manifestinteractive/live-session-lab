@@ -1,7 +1,6 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
 import { AccessToken, LiveKitAPI, RoomConfiguration, TrackSource } from "livekit-server-sdk";
-import { verifyInvitation } from "./invitations.mjs";
+import { participantIdentity, verifyInvitation } from "./invitations.mjs";
 
 const responseHeaders = { "Cache-Control": "no-store, private", "Pragma": "no-cache", "Vary": "Origin" };
 const reply = (status: number, body: object) => Response.json(body, { status, headers: responseHeaders });
@@ -44,7 +43,7 @@ export async function admit(request: Request) {
     input = { invitation: fields.invitation, displayName };
   } catch { return reject(400, "invalid_request"); }
 
-  let validated: { room: string; expiresAt: number };
+  let validated: Awaited<ReturnType<typeof verifyInvitation>>;
   try { validated = await verifyInvitation(input.invitation, process.env.INVITATION_SIGNING_SECRET ?? ""); }
   catch { return reject(401, "invalid_invitation"); }
 
@@ -60,8 +59,8 @@ export async function admit(request: Request) {
     const room = await api.room.createRoom({ name: validated.room, maxParticipants: 2, emptyTimeout: 300, departureTimeout: 20 });
     // Existing rooms ignore token configuration. Refuse an incompatible room.
     if (room.name !== validated.room || room.maxParticipants !== 2) throw new Error();
-    // Room configuration also protects automatic recreation after this request.
-    const token = new AccessToken(apiKey, secret, { identity: randomUUID(), name: input.displayName, ttl: 300 });
+    // Only two identities can be issued. Reusing a place replaces its active connection.
+    const token = new AccessToken(apiKey, secret, { identity: participantIdentity(validated.room, validated.seat), name: input.displayName, ttl: 300 });
     token.addGrant({ room: validated.room, roomJoin: true, canSubscribe: true, canPublish: true,
       canPublishSources: [TrackSource.CAMERA, TrackSource.MICROPHONE], canPublishData: false,
       canUpdateOwnMetadata: false, roomAdmin: false, roomCreate: false, roomList: false, roomRecord: false });

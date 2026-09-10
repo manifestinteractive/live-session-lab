@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ConnectionState, LocalVideoTrack, Room, RoomEvent, Track } from "livekit-client";
+import { ConnectionState, DisconnectReason, LocalVideoTrack, Room, RoomEvent, Track } from "livekit-client";
 import { isTrackReference, RoomAudioRenderer, RoomContext, setLogLevel, StartAudio, useConnectionState, useLocalParticipant, useParticipants, useTracks, VideoTrack } from "@livekit/components-react";
 import { LockKeyhole, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { CallSession, type InputKind } from "@/lib/call-session";
@@ -110,7 +110,7 @@ function ConnectedMedia() {
           ? <VideoTrack trackRef={reference} className="aspect-video w-full rounded-2xl bg-stage object-contain" /> : <CameraPlaceholder remote={!reference.participant.isLocal} />}
         <p className="break-words text-sm">{reference.participant.isLocal ? "You" : reference.participant.name || "Test participant"}</p>
       </section>)}
-      {participants.length < 2 && <Empty className="min-h-64 rounded-2xl border"><EmptyHeader><EmptyTitle>Waiting for the other participant</EmptyTitle><EmptyDescription>They can join with the same private invitation.</EmptyDescription></EmptyHeader></Empty>}
+      {participants.length < 2 && <Empty className="min-h-64 rounded-2xl border"><EmptyHeader><EmptyTitle>Waiting for the other participant</EmptyTitle><EmptyDescription>They must use their own private invitation.</EmptyDescription></EmptyHeader></Empty>}
     </div>
     <RoomAudioRenderer />
     <StartAudio label="Enable audio playback" className={cn(buttonVariants({ variant: "outline" }), "min-h-11")} />
@@ -138,7 +138,12 @@ function CallExperience({ session, getInvitation }: { session: CallSession; getI
 
   useEffect(() => {
     mounted.current = true;
-    const disconnected = () => { setJoined(false); setNotice("Disconnected. Capture has stopped. You can rejoin while the invitation is valid."); };
+    const disconnected = (reason?: DisconnectReason) => {
+      setJoined(false);
+      setNotice(reason === DisconnectReason.DUPLICATE_IDENTITY
+        ? "This invitation was opened on another device. That connection replaced yours. Your camera and microphone have stopped."
+        : "Disconnected. Capture has stopped. You can rejoin while the invitation is valid.");
+    };
     session.room.on(RoomEvent.Disconnected, disconnected);
     return () => { mounted.current = false; operation.current?.abort(); session.room.off(RoomEvent.Disconnected, disconnected); };
   }, [session]);
@@ -200,7 +205,7 @@ function CallExperience({ session, getInvitation }: { session: CallSession; getI
     {active ? <ConnectedMedia /> : <div className="grid items-start gap-6 lg:grid-cols-2">
       <PreviewVideo track={camera ? session.tracks.get("camera") as LocalVideoTrack : undefined} />
       <Card className="[--card-spacing:--spacing(6)]">
-        <CardHeader><CardTitle><h2>Private call setup</h2></CardTitle><CardDescription>Use a made-up name. Enable only the devices you want to share.</CardDescription></CardHeader>
+        <CardHeader><CardTitle><h2>Private call setup</h2></CardTitle><CardDescription>Use a made-up name. Enable only the devices you want to share.</CardDescription><p className="text-sm text-muted-foreground">Use your own invitation. Joining with an invitation already in use replaces its current connection.</p></CardHeader>
         <CardContent><FieldGroup><Field><FieldLabel htmlFor="call-name">Temporary display name</FieldLabel><Input id="call-name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="off" maxLength={40} disabled={pending} aria-describedby="call-name-help" className="min-h-11" /><FieldDescription id="call-name-help">Your test name is sent to the call service when you join.</FieldDescription></Field></FieldGroup></CardContent>
         <CardFooter><Button className="min-h-11 w-full" disabled={pending || !name.trim()} onClick={() => void join()}><LockKeyhole data-icon="inline-start" aria-hidden="true" />{pending ? "Please wait..." : "Join session"}</Button></CardFooter>
       </Card>

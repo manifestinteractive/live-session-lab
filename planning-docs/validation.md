@@ -13,7 +13,7 @@ Planned cases below are not test results.
 | Phase 1 shell            | Introduction and invitation requirement, disconnected labels, accessible controls, and responsive layout.                                      |
 | Admission                | Valid, missing, malformed, expired, and tampered invitations; disallowed origin; invalid display input; room substitution; disabled admission. |
 | Token permissions        | Server-generated identity, validated room binding, five-minute expiry, ordinary participant grants, and non-cacheable responses.               |
-| Capacity                 | Reject a third participant and enforce the limit after room recreation; test concurrent joins with configured LiveKit.                         |
+| Capacity                 | Reject invalid signed places; concurrent exchanges issue two identities; invitation reuse replaces its connection and stops capture, including after recreation.                         |
 | Media lifecycle          | Preview cancellation, failed join, component unmount, duplicate capture prevention, mute state, leave, and rejoin.                             |
 | Recovery and privacy     | Permission errors, unavailable inputs, provider/quota errors, no persistent credentials, and sanitized application diagnostics.                |
 
@@ -240,3 +240,63 @@ A trusted HTTPS address is required for iPhone capture. No deployment or certifi
 Review the invitation workflow and perform the Mac/iPhone acceptance cases before treating Phase 2 as fully accepted.
 Phases 3 and 4 remain unstarted. No commit, push, or deployment occurred.
 Suggested commit message: `feat: add private LiveKit calls and protected admission`.
+
+### Phase 2 capacity investigation follow-up: 2026-09-10
+
+The user asked to continue. `ADMISSION_ENABLED=false` remains the correct local default.
+No change to `.env.local` is needed for agent-run validation; controlled tests can use a process override.
+
+Read the LiveKit Community discussion and current participant identity documentation through the LiveKit documentation MCP.
+The discussion describes metadata propagation between regions. It does not establish a reliable minimum admission delay.
+The architecture records a proposed separate-invitation workflow. Its acceptance and implementation remain pending.
+
+A provider API probe created and deleted a temporary room, then immediately requested creation with the same name.
+The second creation returned the original room identifier and limit of two.
+Room listing returned no matching room at immediate, 1-second, 4-second, and 14-second observations.
+The final deletion returned not found. No participant joined this probe.
+This reproduces the recreation inconsistency without the application endpoint or browser SDK.
+The cause remains unverified; this is not a passing recreation result.
+
+A second probe waited three seconds after deletion and changed the requested empty-room timeout.
+It returned the same inconsistent result. A final provider query returned zero active rooms.
+Scaffolding and documentation link checks passed. `git diff --check` passed.
+No application code, credentials, account settings, or deployment changed during this investigation.
+
+### Phase 2 database-free revision: 2026-09-10
+
+The user clarified that this is a demo without strict functional requirements and asked to avoid a database.
+The revised acceptance target uses two participant-specific invitations and connection replacement.
+This supersedes the earlier requirement to reject every additional device. Earlier failed results remain recorded above.
+The server issues only two stable identities per room; it does not create a third identity for a reused invitation.
+
+| Check | Actual result |
+| --- | --- |
+| `npm run ai:verify` | Passed scaffolding checks, lint, type checking, 50 unit/component tests, 47 browser tests, and the production build. |
+| Invitation and identity checks | Passed separate signed places, missing/invalid places, place tampering, client-selected places, concurrent exchanges, and renewal after signing-key rotation. |
+| Operator command | Passed two distinct invitations for the same room with places 1 and 2. Earlier shared invitations are rejected. |
+| `npm run test:live` | Passed against the user-confirmed free project using synthetic media and isolated Chromium contexts. |
+| Media transport | Remote video decoded in both directions and inbound audio RTP bytes arrived in both directions. |
+| Media controls | Camera mute/unmute propagated remotely; the microphone control reflected SDK state. |
+| Invitation replacement | Reusing the first invitation disconnected its original connection, displayed the replacement notice, and stopped its capture. The other participant remained connected. The provider listed two distinct identities. |
+| Leave/rejoin | Leaving updated remote presence. The original participant rejoined with capture off using their invitation. |
+| Active room deletion | Deleting the initial active room disconnected both participants and stopped capture. |
+| Rejoin after deletion | Concurrent joins with the two invitations succeeded. The provider listed two distinct identities and each browser displayed one remote participant. |
+| Replacement after recreation | Reusing an invitation again replaced its connection and left two listed participants. |
+| Provider metadata limitation | Listing the recreated room still did not return its configuration. The revised identity rule does not depend on this listing. Administrative deletion of the recreated room while active remains unverified. |
+| Cleanup | Closed all test contexts. A final provider query returned zero active rooms. The enabled local process was stopped. `.env.local` remained unchanged with admission disabled. |
+| `git diff --check` | Passed. |
+
+The first TypeScript check required an explicit return type for the validated participant place. The corrected final checks passed.
+No database, paid service, or account change was added. The default suite makes no provider calls.
+
+Playwright MCP captured and the agent viewed all eight `phase2-fixed-*.png` screenshots.
+These cover invitation-required and setup states at 320, 390, 768, and 1440 pixels, landscape, 200% root text size, and focus.
+The revised notice remained readable. The MCP session reported zero console errors or warnings.
+The live command captured desktop and mobile-width media screenshots and the replacement notice; all three were viewed.
+Raw evidence remains under ignored `artifacts/playwright/`.
+
+These observations do not establish instantaneous cross-region replacement or physical-device media quality.
+Mac Chrome/Safari and physical iPhone call acceptance remain Not run. A trusted HTTPS setup is still needed for iPhone capture.
+Human review is pending for the revised invitation behavior and physical-device checks. Phases 3 and 4 remain unstarted.
+Suggested commit message: `fix: use participant invitations for database-free calls`.
+No commit, push, or deployment occurred.

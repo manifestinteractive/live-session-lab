@@ -1,6 +1,6 @@
 # Implementation plan
 
-Phase 1 received human acceptance. Phase 2 remains incomplete because the live two-participant limit failed.
+Phase 1 received human acceptance. Phase 2 now uses two signed participant places and fixed identities without a database.
 Physical-device acceptance and human review remain pending.
 Phases 3 and 4 are unstarted.
 Complete one requested phase, then stop for human review.
@@ -34,7 +34,9 @@ Human review: visual layout, participant language, static scope, and setup instr
 Dependency: human acceptance of Phase 1. Configured credentials are required for real call validation.
 
 Implement the local invitation command and protected token endpoint from the architecture.
-Use one-hour invitations by default and five-minute LiveKit tokens. Enforce the two-participant room limit.
+Use two different one-hour invitations and five-minute LiveKit tokens. Each invitation specifies one of two signed participant places.
+Derive a stable identity for each room and place. Reuse replaces that identity's connection and must stop capture on the displaced device.
+Retain the provider room limit as a secondary setting. Do not depend on it as the sole admission boundary.
 Test authorization before enabling admission for external use.
 
 Implement explicit camera/microphone preview, available input selection, and joining with the selected media state.
@@ -42,7 +44,9 @@ Show remote audio/video and participant presence. Implement camera/microphone co
 Use LiveKit state for indicators and define track ownership during preview, join, failure, and leave.
 
 Acceptance: authorization and media lifecycle tests pass; a Mac and iPhone can communicate with configured credentials.
-Leaving and abandoning preview release capture devices. A third participant cannot enter a full room.
+Leaving and abandoning preview release capture devices. Invalid participant places and client-selected identities are rejected.
+Concurrent exchanges issue at most two identities. Invitation reuse replaces its connection, including after room recreation.
+Strict rejection of an additional device is outside this demo. Do not describe replacement as rejection.
 If credentials or a second device are unavailable, finish testable integration code and mark live acceptance as blocked.
 Do not simulate live acceptance or mark the phase validated without that evidence.
 Human review: real audio/video, explicit permission behavior, and invitation workflow. Stop for review.

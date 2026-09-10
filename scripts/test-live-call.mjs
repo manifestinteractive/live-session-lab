@@ -1,16 +1,15 @@
 // Opt-in provider test. Uses synthetic media and consumes the configured project allowance.
 import { LiveKitAPI } from 'livekit-server-sdk';
-import { createInvitation } from '../src/lib/server/invitations.mjs';
+import { createInvitationPair } from '../src/lib/server/invitations.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 process.env.PLAYWRIGHT_BROWSERS_PATH = process.cwd()+'/.cache/ms-playwright';
 const { chromium, expect } = await import('@playwright/test');
-let invitation, room;
-try { ({invitation,room}=await createInvitation(process.env.INVITATION_SIGNING_SECRET)); new URL(process.env.APP_ORIGIN); new URL(process.env.LIVEKIT_URL); }
+let invitations, room;
+try { ({invitations,room}=await createInvitationPair(process.env.INVITATION_SIGNING_SECRET)); new URL(process.env.APP_ORIGIN); new URL(process.env.LIVEKIT_URL); }
 catch { console.error('Live test configuration is missing or invalid.'); process.exit(1); }
 await mkdir('artifacts/playwright', {recursive:true});
 const origin=process.env.APP_ORIGIN;
-const url=new URL('/call',origin);
-url.hash=new URLSearchParams({invite:invitation}).toString();
+const urls=invitations.map(invite=>{const url=new URL('/call',origin);url.hash=new URLSearchParams({invite}).toString();return url;});
 const host=new URL(process.env.LIVEKIT_URL);host.protocol='https:';
 const api=new LiveKitAPI({host:host.origin,apiKey:process.env.LIVEKIT_API_KEY,secret:process.env.LIVEKIT_API_SECRET});
 let browser;
@@ -32,7 +31,7 @@ try {
    navigator.mediaDevices.getUserMedia=async options=>{const stream=await capture(options);tracks.push(...stream.getTracks());return stream;};
   });
   stage='opening private setup';
-  await page.goto(url.href);
+  await page.goto(urls[i === 1 ? 1 : 0].href);
   await expect(page.getByRole('heading',{name:'Before you join'})).toBeVisible();
   if(new URL(page.url()).hash) throw new Error('Fragment retained');
   await page.getByLabel('Temporary display name').fill('Test visitor');
@@ -56,19 +55,6 @@ try {
   await expect.poll(()=>page.evaluate(async()=>{let received=false;for(const peer of window.__testPeers){const stats=await peer.getStats();stats.forEach(report=>{if(report.type==='inbound-rtp'&&report.kind==='audio'&&report.bytesReceived>0)received=true;});}return received;}),{timeout:15000}).toBe(true);
  }
  results.push('Two isolated browser participants connected; remote video decoded in both directions and inbound audio RTP bytes were received in both directions.');
- stage='third participant rejection';
- await pages[2].getByRole('button',{name:'Join session'}).click();
- await expect.poll(async()=>await pages[2].getByRole('alert',{name:'Action needed'}).count()+await pages[2].getByRole('button',{name:'Leave session'}).count(),{timeout:30000}).toBeGreaterThan(0);
- const listed=await api.room.listParticipants(room);
- const roomEvidence=(await api.room.listRooms([room]))[0];
- if(listed.length===2 && await pages[2].getByRole('alert',{name:'Action needed'}).count()) {
-  results.push('LiveKit rejected a third connection while two participants were connected.');
- } else {
-  results.push('FAILED: LiveKit admitted '+listed.length+' participants despite reported maxParticipants='+roomEvidence?.maxParticipants+'.');
-  process.exitCode=1;
-  await pages[2].getByRole('button',{name:'Leave session'}).click();
-  await expect(pages[0].getByRole('region',{name:'Remote participant media'})).toHaveCount(1,{timeout:15000});
- }
  stage='SDK mute propagation';
  await pages[0].getByRole('button',{name:'Turn camera off'}).click();
  await expect(pages[0].getByRole('button',{name:'Enable camera',exact:true})).toHaveAttribute('aria-pressed','false');
@@ -80,22 +66,51 @@ try {
  results.push('Camera mute and unmute propagated to the remote interface; microphone control reflected SDK mute state.');
  await pages[0].screenshot({path:'artifacts/playwright/phase2-live-desktop.png',fullPage:true});
  await pages[1].screenshot({path:'artifacts/playwright/phase2-live-mobile.png',fullPage:true});
- stage='leave and rejoin';
- await pages[0].getByRole('button',{name:'Leave session'}).click();
- await expect(pages[0].getByRole('heading',{name:'Before you join'})).toBeVisible();
+ stage='invitation reuse';
+ await pages[2].getByRole('button',{name:'Join session'}).click();
+ await expect(pages[2].getByRole('button',{name:'Leave session'})).toBeVisible({timeout:30000});
+ await expect(pages[0].getByText('This invitation was opened on another device. That connection replaced yours. Your camera and microphone have stopped.',{exact:true})).toBeVisible({timeout:15000});
  await expect.poll(()=>pages[0].evaluate(()=>window.__captureTracks.every(t=>t.readyState==='ended'))).toBe(true);
+ await expect.poll(async()=>{
+  const participants=await api.room.listParticipants(room);
+  return {count:participants.length,identities:new Set(participants.map(p=>p.identity)).size};
+ },{timeout:15000}).toEqual({count:2,identities:2});
+ await expect(pages[1].getByRole('button',{name:'Leave session'})).toBeVisible();
+ results.push('Reusing the first invitation replaced its original connection and stopped its capture. The second participant remained connected. The provider listed two distinct identities.');
+ await pages[0].screenshot({path:'artifacts/playwright/phase2-replaced.png',fullPage:true});
+ stage='leave and rejoin';
+ await pages[2].getByRole('button',{name:'Leave session'}).click();
  await expect(pages[1].getByText('Waiting for the other participant',{exact:true})).toBeVisible();
  await pages[0].getByRole('button',{name:'Join session'}).click();
  await expect(pages[0].getByRole('button',{name:'Leave session'})).toBeVisible({timeout:30000});
- results.push('Leaving stopped synthetic capture and updated remote presence. Rejoin with the in-memory invitation succeeded.');
- for(const page of pages.slice(0,2)) await page.getByRole('button',{name:'Leave session'}).click();
- stage='room recreation';
+ await expect(pages[1].getByRole('region',{name:'Remote participant media'})).toHaveCount(1);
+ results.push('Leaving updated remote presence. Rejoin with the participant-specific invitation succeeded with capture off.');
+ stage='room deletion';
  await api.room.deleteRoom(room);
+ for(const page of pages.slice(0,2)) {
+  await expect(page.getByRole('heading',{name:'Before you join'})).toBeVisible({timeout:15000});
+  await expect.poll(()=>page.evaluate(()=>window.__captureTracks.every(t=>t.readyState==='ended'))).toBe(true);
+ }
+ results.push('Deleting the active room disconnected both participants and stopped capture.');
+ stage='room recreation';
+ await Promise.all(pages.slice(0,2).map(async page=>{
+  await page.getByRole('button',{name:'Join session'}).click();
+  await expect(page.getByRole('button',{name:'Leave session'})).toBeVisible({timeout:30000});
+ }));
+ await expect.poll(async()=>{
+  const participants=await api.room.listParticipants(room);
+  return {count:participants.length,identities:new Set(participants.map(p=>p.identity)).size};
+ },{timeout:15000}).toEqual({count:2,identities:2});
+ for(const page of pages.slice(0,2)) await expect(page.getByRole('region',{name:'Remote participant media'})).toHaveCount(1);
+ results.push('Both participant invitations rejoined after deletion with concurrent requests. The provider listed two distinct identities.');
+ const recreated=(await api.room.listRooms([room]))[0];
+ results.push(recreated?.maxParticipants===2?'The recreated room also reported maxParticipants=2.':'Room configuration listing remains inconsistent; identity admission does not depend on that listing.');
+ stage='recreated room invitation reuse';
  await pages[2].getByRole('button',{name:'Join session'}).click();
  await expect(pages[2].getByRole('button',{name:'Leave session'})).toBeVisible({timeout:30000});
- await expect.poll(async()=>(await api.room.listRooms([room]))[0]?.maxParticipants,{timeout:15000}).toBe(2);
- await pages[2].getByRole('button',{name:'Leave session'}).click();
- results.push('The same invitation recreated a deleted room with maxParticipants set to 2.');
+ await expect(pages[0].getByRole('heading',{name:'Before you join'})).toBeVisible({timeout:15000});
+ await expect.poll(async()=>(await api.room.listParticipants(room)).length,{timeout:15000}).toBe(2);
+ results.push('Invitation reuse after room recreation again replaced its connection and left two participants.');
 } catch {
  results.push('FAILED during '+stage+'. Credential-bearing errors are suppressed.');
  process.exitCode=1;
