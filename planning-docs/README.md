@@ -9,12 +9,12 @@ These documents define the complete project requirements.
 
 ## Reading order
 
-| Document | Purpose |
-| --- | --- |
-| [Architecture](architecture.md) | System boundaries, admission flow, interfaces, and technology decisions. |
-| [Implementation plan](implementation-plan.md) | Ordered work, phase acceptance criteria, and human review points. |
-| [Privacy and cost](privacy-and-cost.md) | Data handling, free limits, and operator controls. |
-| [Validation](validation.md) | Automated checks, physical-device tests, and actual results. |
+| Document                                      | Purpose                                                                  |
+| --------------------------------------------- | ------------------------------------------------------------------------ |
+| [Architecture](architecture.md)               | System boundaries, admission flow, interfaces, and technology decisions. |
+| [Implementation plan](implementation-plan.md) | Ordered work, phase acceptance criteria, and human review points.        |
+| [Privacy and cost](privacy-and-cost.md)       | Data handling, free limits, and operator controls.                       |
+| [Validation](validation.md)                   | Automated checks, physical-device tests, and actual results.             |
 
 See [AI development setup](../docs/ai-development.md) for the installed development tools and their earlier validation results.
 
@@ -38,13 +38,13 @@ Record other browsers as untested until actual checks occur. Do not claim broade
 
 ## Stack and exclusions
 
-| Area | Requirement |
-| --- | --- |
-| Application | Next.js App Router, React, and TypeScript. |
-| Interface | shadcn/ui component source in the repository; Tailwind CSS v4 and shared theme variables. |
-| Media | Official LiveKit browser, React component, and server SDKs; LiveKit Cloud Build. |
-| Hosting | Vercel Hobby for the personal, non-commercial demo. |
-| Packages | npm with the existing lockfile; verify compatible versions before installation. |
+| Area        | Requirement                                                                               |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| Application | Next.js App Router, React, and TypeScript.                                                |
+| Interface   | shadcn/ui component source in the repository; Tailwind CSS v4 and shared theme variables. |
+| Media       | Official LiveKit browser, React component, and server SDKs; LiveKit Cloud Build.          |
+| Hosting     | Vercel Hobby for the personal, non-commercial demo.                                       |
+| Packages    | npm with the existing lockfile; verify compatible versions before installation.           |
 
 AI assistance is part of development, not an application feature.
 Do not add a database, user accounts, recording, transcription, analytics, or an AI voice agent.

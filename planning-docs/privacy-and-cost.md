@@ -7,14 +7,14 @@ Status: requirements for the planned application. Account plans and deployed con
 This prototype supports test conversations with temporary display names. Exclude sensitive real-world use.
 The application will not record or transcribe calls. Add no analytics, database, user accounts, or stored call history.
 
-| Data | Planned handling |
-| --- | --- |
-| Camera/microphone preview | Remains local before joining. Capture starts only after an explicit participant action. |
-| Published audio/video | Travels through LiveKit to the other participant after joining. The application stores no call content. |
-| Temporary display name | Sent to the token endpoint and LiveKit for participant display. Never include it in application logs. |
-| Participant and room identifiers | Use generated, non-sensitive identifiers. LiveKit and participants process identifiers needed for the room. |
-| Invitation and participant tokens | Bearer credentials held in browser memory; never persist them in browser storage or diagnostic output. |
-| Signing and API secrets | Local operator environment and server environment only. Never include them in browser bundles or public files. |
+| Data                                 | Planned handling                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Camera/microphone preview            | Remains local before joining. Capture starts only after an explicit participant action.                             |
+| Published audio/video                | Travels through LiveKit to the other participant after joining. The application stores no call content.             |
+| Temporary display name               | Sent to the token endpoint and LiveKit for participant display. Never include it in application logs.               |
+| Participant and room identifiers     | Use generated, non-sensitive identifiers. LiveKit and participants process identifiers needed for the room.         |
+| Invitation and participant tokens    | Bearer credentials held in browser memory; never persist them in browser storage or diagnostic output.              |
+| Signing and API secrets              | Local operator environment and server environment only. Never include them in browser bundles or public files.      |
 | IP addresses and connection metadata | Hosting and media providers process connection information. Do not claim that providers retain no logs or metadata. |
 
 Use HTTPS and standard encrypted WebRTC transport. Do not claim end-to-end encryption or regulatory compliance.
@@ -34,10 +34,10 @@ Store only sanitized test outcomes in public documentation. Do not put real conv
 
 Pricing facts checked on 2026-09-10. Verify them again before deployment or a plan change.
 
-| Service | Selected plan | Limit behavior |
-| --- | --- | --- |
-| LiveKit Cloud | Build, free | Includes 5,000 WebRTC participant-minutes and 50 GB downstream transfer monthly. Free allowances are hard caps. |
-| Vercel | Hobby, free | Personal, non-commercial use with resource limits. Features can pause when usage exceeds allowances. |
+| Service       | Selected plan | Limit behavior                                                                                                  |
+| ------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
+| LiveKit Cloud | Build, free   | Includes 5,000 WebRTC participant-minutes and 50 GB downstream transfer monthly. Free allowances are hard caps. |
+| Vercel        | Hobby, free   | Personal, non-commercial use with resource limits. Features can pause when usage exceeds allowances.            |
 
 LiveKit rejects new requests at exhausted free allowances instead of billing overages.
 Free allowances are shared across a user's free projects and reset monthly.

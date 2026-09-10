@@ -36,11 +36,11 @@ Configure shadcn/ui and Tailwind during Phase 1 using the official instructions:
 
 ## Planned interfaces
 
-| Interface | Input | Result |
-| --- | --- | --- |
-| Local invitation command | Room identifier and optional validity duration; server-only signing secret. | Shareable invitation with one-hour default validity. |
-| `POST /api/token` | Invitation credential and temporary display name. | LiveKit server URL and a five-minute participant token. |
-| LiveKit room connection | Issued token and explicit media choices. | SDK connection state and local/remote media. |
+| Interface                | Input                                                                       | Result                                                  |
+| ------------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Local invitation command | Room identifier and optional validity duration; server-only signing secret. | Shareable invitation with one-hour default validity.    |
+| `POST /api/token`        | Invitation credential and temporary display name.                           | LiveKit server URL and a five-minute participant token. |
+| LiveKit room connection  | Issued token and explicit media choices.                                    | SDK connection state and local/remote media.            |
 
 The invitation command intentionally outputs the credential for the operator to share.
 Do not copy that output into logs, test artifacts, documentation, or chat.
@@ -76,13 +76,13 @@ Admission expiry limits future admission. It does not end an existing call.
 
 Decisions accepted on 2026-09-10. These are design choices, not test results.
 
-| Decision | Reason and tradeoff |
-| --- | --- |
-| Managed LiveKit transport | Keep effort on the application and media lifecycle. Accept provider dependency and free quotas. |
-| shadcn/ui and Tailwind v4 | Keep editable components and shared responsive styling. Test accessibility after composition and customization. |
-| Private invitations and two participants | Limit public exposure and keep initial validation focused. Visitors need an operator-provided invitation. |
-| Signed invitations without a database | Avoid persistent participant data and another service. Individual invitation revocation is limited. |
-| Standard encrypted transport | Keep the first release focused on test conversations. End-to-end media encryption is outside this release. |
-| Vercel Hobby and LiveKit Build | Target zero service charges. Accept interruption at free limits and recheck terms before deployment. |
+| Decision                                 | Reason and tradeoff                                                                                             |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Managed LiveKit transport                | Keep effort on the application and media lifecycle. Accept provider dependency and free quotas.                 |
+| shadcn/ui and Tailwind v4                | Keep editable components and shared responsive styling. Test accessibility after composition and customization. |
+| Private invitations and two participants | Limit public exposure and keep initial validation focused. Visitors need an operator-provided invitation.       |
+| Signed invitations without a database    | Avoid persistent participant data and another service. Individual invitation revocation is limited.             |
+| Standard encrypted transport             | Keep the first release focused on test conversations. End-to-end media encryption is outside this release.      |
+| Vercel Hobby and LiveKit Build           | Target zero service charges. Accept interruption at free limits and recheck terms before deployment.            |
 
 See [Privacy and cost](privacy-and-cost.md) for data boundaries and operational limitations.

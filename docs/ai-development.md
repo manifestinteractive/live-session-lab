@@ -32,7 +32,7 @@ See the official [MCP configuration](https://developers.openai.com/codex/mcp) an
 | Tool                      | Purpose                                                                                |
 | ------------------------- | -------------------------------------------------------------------------------------- |
 | `playwright` MCP          | Inspect the local UI and capture screenshots in an isolated headless Chromium session. |
-| `shadcn` MCP              | Search and inspect components in the official shadcn/ui registry. |
+| `shadcn` MCP              | Search and inspect components in the official shadcn/ui registry.                      |
 | `livekit_docs` MCP        | Read official LiveKit SDK documentation. The feedback submission tool is disabled.     |
 | `openaiDeveloperDocs` MCP | Read official OpenAI documentation for Codex setup.                                    |
 | `admission_reviewer`      | Optional review agent for invitation validation, token grants, and media ownership.    |
@@ -72,14 +72,14 @@ The smoke check verifies registry search; it does not claim component installati
 
 ## Validation commands
 
-| Command                 | Checks                                                                                                           |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `npm run ai:check`      | Lockfile consistency, configuration syntax, skill metadata, scripts, hook output, and local documentation links. |
-| `npm run ai:mcp:smoke`  | MCP connection, fixture navigation, snapshot, button interaction, and screenshot capture.                        |
-| `npm run ai:docs:smoke` | Connection and tool discovery for both documentation servers.                                                    |
-| `npm run ai:shadcn:smoke` | shadcn MCP connection, tool discovery, and a read-only search for the official button component. |
-| `npm run ai:shadcn -- <arguments>` | Run the pinned shadcn CLI. Mutating commands remain limited to the authorized phase. |
-| `npm run ai:verify`     | Application lint, type checks, tests, browser tests, and production build, once added.                           |
+| Command                            | Checks                                                                                                           |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `npm run ai:check`                 | Lockfile consistency, configuration syntax, skill metadata, scripts, hook output, and local documentation links. |
+| `npm run ai:mcp:smoke`             | MCP connection, fixture navigation, snapshot, button interaction, and screenshot capture.                        |
+| `npm run ai:docs:smoke`            | Connection and tool discovery for both documentation servers.                                                    |
+| `npm run ai:shadcn:smoke`          | shadcn MCP connection, tool discovery, and a read-only search for the official button component.                 |
+| `npm run ai:shadcn -- <arguments>` | Run the pinned shadcn CLI. Mutating commands remain limited to the authorized phase.                             |
+| `npm run ai:verify`                | Application lint, type checks, tests, browser tests, and production build, once added.                           |
 
 `ai:verify` fails while application commands are missing. It cannot report the scaffolding as a passing application.
 During Phase 1, add real `lint`, `typecheck`, `test`, `test:e2e`, and `build` commands to the existing package.
@@ -103,7 +103,7 @@ Validated on 2026-09-10 using macOS arm64, Node.js 26.8.1, npm 11.19.0, and Code
 | Playwright MCP smoke check        | Passed navigation, snapshot, button interaction, and PNG capture.                              |
 | Screenshot inspection             | Viewed `artifacts/playwright/tooling-smoke.png`; the fixture showed the confirmed interaction. |
 | Application verification guard    | Exited with code 1 and named all five missing application commands, as intended.               |
-| Git whitespace and ignore checks  | Passed. Browser evidence, caches, and dependencies remain ignored.                           |
+| Git whitespace and ignore checks  | Passed. Browser evidence, caches, and dependencies remain ignored.                             |
 
 Chromium failed to launch inside the restricted shell sandbox. The browser check passed with approved local process access.
 The smoke script uses the installed MCP tool schema, including `target` for clicks and `scale` for screenshots.
