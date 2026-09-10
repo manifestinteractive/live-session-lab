@@ -5,7 +5,9 @@ description: Implement or review Live Session Lab invitation exchange, token iss
 
 # LiveKit admission and media ownership
 
-Read the admission contract in `docs/project-brief.md` and local `plan.md` when available.
+Read `planning-docs/architecture.md` for admission and `planning-docs/privacy-and-cost.md` for data handling.
+Use one-hour invitation validity by default and five-minute participant tokens.
+Apply the two-participant limit through LiveKit on every room-creation path, including recreation.
 Use `livekit_docs` MCP to verify current WebRTC transport, React component, and server SDK APIs before editing integrations.
 Fetch relevant pages after searching. Check compatible package versions. Do not scaffold LiveKit AI Agents.
 If MCP is unavailable, use official pages at https://docs.livekit.io/.

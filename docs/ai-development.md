@@ -1,9 +1,8 @@
 # AI development setup
 
-Status: scaffolding only. Phase 1 has not started.
+Status: planning and scaffolding only. Phase 1 has not started.
 The user selected Codex with GPT-6 Astra. Repository configuration preserves the selected model and permission settings.
-The intended application and phase boundaries are in [project-brief.md](project-brief.md).
-Local `plan.md` contains the detailed plan and remains ignored by Git.
+The [development plan](../planning-docs/README.md) defines the application and phase boundaries.
 
 ## Setup
 
@@ -14,6 +13,7 @@ npm ci
 npm run ai:browser:install
 npm run ai:check
 npm run ai:mcp:smoke
+npm run ai:shadcn:smoke
 ```
 
 The installer downloads the matching Chromium build into ignored `.cache/ms-playwright/`.
@@ -32,6 +32,7 @@ See the official [MCP configuration](https://developers.openai.com/codex/mcp) an
 | Tool                      | Purpose                                                                                |
 | ------------------------- | -------------------------------------------------------------------------------------- |
 | `playwright` MCP          | Inspect the local UI and capture screenshots in an isolated headless Chromium session. |
+| `shadcn` MCP              | Search and inspect components in the official shadcn/ui registry. |
 | `livekit_docs` MCP        | Read official LiveKit SDK documentation. The feedback submission tool is disabled.     |
 | `openaiDeveloperDocs` MCP | Read official OpenAI documentation for Codex setup.                                    |
 | `admission_reviewer`      | Optional review agent for invitation validation, token grants, and media ownership.    |
@@ -45,9 +46,29 @@ Remote documentation servers require network access. They do not manage LiveKit 
 Server configuration follows [Microsoft's Playwright MCP documentation](https://github.com/microsoft/playwright-mcp) and [LiveKit's documentation](https://docs.livekit.io/reference/developer-tools/docs-mcp/).
 
 Repository skills cover phase delivery, browser validation, and LiveKit admission/media ownership.
+The official shadcn/ui skill provides component composition and Tailwind styling guidance.
 They live under `.agents/skills/`, using [Codex's repository skill discovery](https://developers.openai.com/codex/skills).
 Optional review agents live under `.codex/agents/`, using the [custom agent format](https://developers.openai.com/codex/multi-agent).
 Agents inherit the selected model. Use them when delegation is requested, and avoid concurrent control of the same browser.
+
+## shadcn/ui setup
+
+The MCP uses the locally installed `shadcn` package, pinned to version 4.21.0 in the npm lockfile.
+It follows the [official shadcn MCP setup](https://ui.shadcn.com/docs/mcp) and starts from the repository root.
+Run `npm run ai:shadcn -- <arguments>` for CLI work. This uses the pinned package instead of downloading `latest`.
+
+The [official skill](https://ui.shadcn.com/docs/skills) is installed under `.agents/skills/shadcn/` with its supporting references and assets.
+Its files are retained unchanged from [upstream commit 3ba91b1](https://github.com/shadcn-ui/ui/tree/3ba91b1cc83e1bbe4ab35a422ff2a694849c5048/skills/shadcn).
+The upstream [MIT license](licenses/shadcn-skill.txt) is included. Recheck the skill and MCP together before upgrading either.
+
+Repository instructions select the official `@shadcn` registry and replace upstream `npx shadcn@latest` examples with the pinned CLI command.
+Run `npm run ai:shadcn -- info --json` explicitly for project context; do not assume inline commands in skill text executed.
+Phase 1 will create `components.json` and initialize the application. Until then, project-specific component context is incomplete.
+The MCP can already connect and search the official registry without that configuration.
+
+The tested MCP search response contains `[object Promise]` in generated add-command fields.
+Use the pinned CLI directly for component changes, such as `npm run ai:shadcn -- add @shadcn/button` during authorized application work.
+The smoke check verifies registry search; it does not claim component installation was tested.
 
 ## Validation commands
 
@@ -56,6 +77,8 @@ Agents inherit the selected model. Use them when delegation is requested, and av
 | `npm run ai:check`      | Lockfile consistency, configuration syntax, skill metadata, scripts, hook output, and local documentation links. |
 | `npm run ai:mcp:smoke`  | MCP connection, fixture navigation, snapshot, button interaction, and screenshot capture.                        |
 | `npm run ai:docs:smoke` | Connection and tool discovery for both documentation servers.                                                    |
+| `npm run ai:shadcn:smoke` | shadcn MCP connection, tool discovery, and a read-only search for the official button component. |
+| `npm run ai:shadcn -- <arguments>` | Run the pinned shadcn CLI. Mutating commands remain limited to the authorized phase. |
 | `npm run ai:verify`     | Application lint, type checks, tests, browser tests, and production build, once added.                           |
 
 `ai:verify` fails while application commands are missing. It cannot report the scaffolding as a passing application.
@@ -80,7 +103,7 @@ Validated on 2026-09-10 using macOS arm64, Node.js 26.8.1, npm 11.19.0, and Code
 | Playwright MCP smoke check        | Passed navigation, snapshot, button interaction, and PNG capture.                              |
 | Screenshot inspection             | Viewed `artifacts/playwright/tooling-smoke.png`; the fixture showed the confirmed interaction. |
 | Application verification guard    | Exited with code 1 and named all five missing application commands, as intended.               |
-| Git whitespace and ignore checks  | Passed. The local plan, browser evidence, caches, and dependencies remain ignored.             |
+| Git whitespace and ignore checks  | Passed. Browser evidence, caches, and dependencies remain ignored.                           |
 
 Chromium failed to launch inside the restricted shell sandbox. The browser check passed with approved local process access.
 The smoke script uses the installed MCP tool schema, including `target` for clicks and `scale` for screenshots.
@@ -89,3 +112,6 @@ These results validate the tooling fixture only. No application, LiveKit call, o
 The new MCP tools are configured for subsequent Codex sessions; this session verified them through an MCP client script.
 Native hook activation and optional agent spawning were not exercised. Review the hook through `/hooks` in a new Codex session.
 No commit, push, or deployment occurred.
+
+The table above records the initial scaffolding checks. It does not claim that later changes reran those checks.
+See the [validation record](../planning-docs/validation.md) for subsequent planning and application results.

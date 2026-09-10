@@ -8,6 +8,13 @@ args = ["scripts/ai/playwright.mjs"]
 startup_timeout_sec = 30
 tool_timeout_sec = 60
 
+[mcp_servers.shadcn]
+enabled = true
+command = "node"
+args = ["node_modules/shadcn/dist/index.js", "mcp"]
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+
 [mcp_servers.livekit_docs]
 enabled = true
 url = "https://docs.livekit.io/mcp"

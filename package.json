@@ -4,18 +4,23 @@
   "private": true,
   "type": "module",
   "description": "AI development tooling for the planned Live Session Lab application.",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "ai:check": "node scripts/ai/check.mjs",
     "ai:verify": "node scripts/ai/verify.mjs",
     "ai:browser:install": "node scripts/ai/playwright.mjs install",
     "ai:mcp": "node scripts/ai/playwright.mjs",
     "ai:mcp:smoke": "node scripts/ai/mcp-smoke.mjs",
-    "ai:docs:smoke": "node scripts/ai/mcp-smoke.mjs --docs"
+    "ai:docs:smoke": "node scripts/ai/mcp-smoke.mjs --docs",
+    "ai:shadcn": "shadcn",
+    "ai:shadcn:smoke": "node scripts/ai/shadcn-smoke.mjs"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
     "@playwright/mcp": "0.0.80",
+    "shadcn": "4.21.0",
     "smol-toml": "1.8.0"
   }
 }
