@@ -28,6 +28,18 @@ This is a demo for test conversations. Keep personal or sensitive information ou
 The app adds no recording, transcription, or analytics. It uses encrypted transport and makes no end-to-end encryption claim.
 See [Privacy and cost](planning-docs/privacy-and-cost.md) for provider processing and operating limits.
 
+## Install the app
+
+Open the shared HTTPS address in a supported browser.
+On iPhone, use Safari's Share menu, select **Add to Home Screen**, and keep **Open as Web App** enabled when shown.
+[Apple's instructions](https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios).
+
+On desktop Chrome or Edge, use the browser's install option. On supported Mac versions, Safari offers **File > Add to Dock**.
+[Browser installation support](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable).
+
+The installed app opens the join page in its own window. It still needs an internet connection and a valid invite code.
+Installation does not save your code or name. You may need to grant camera and microphone permission again.
+
 ## Built in the open
 
 Next.js, React, and TypeScript power the application. shadcn/ui and Tailwind CSS provide the interface.

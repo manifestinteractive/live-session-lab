@@ -34,7 +34,8 @@
     "format:check": "prettier --check .",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "prepare": "node scripts/prepare.mjs",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "room": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/operator/room.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

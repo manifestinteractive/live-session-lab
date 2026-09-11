@@ -3,7 +3,7 @@
 Live Session Lab is an independent WebRTC experiment for private, two-person browser calls.
 These documents define the complete project requirements and the human review process for AI-assisted development.
 
-Status: the application and pre-release cleanup are ready for review. Phase 4 has not started.
+Status: Phase 4 local handoff preparation is complete. Public deployment and hosted acceptance remain pending.
 The [validation record](validation.md) identifies verified behavior and outstanding release checks.
 
 ## Document index
@@ -16,6 +16,7 @@ The [validation record](validation.md) identifies verified behavior and outstand
 | [Validation](validation.md)                   | Required cases, actual evidence, and checks still needed.                    |
 
 Use the [developer guide](../docs/developers.md) for commands and configuration.
+Phase 4 procedures are in [Deployment](../docs/deployment.md) and [Operations](../docs/operations.md).
 Use [AI development](../docs/ai-development.md) for Codex tools and skills.
 
 ## Product requirements

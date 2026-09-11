@@ -2,6 +2,7 @@
 
 Use this guide to run, configure, and test Live Session Lab.
 See [AI development](ai-development.md) for Codex tools and repository skills.
+Use [Deployment](deployment.md) for Vercel hosting and [Operations](operations.md) for admission and room controls.
 See [the development plan](../planning-docs/README.md) for requirements and review boundaries.
 
 ## Run locally
@@ -19,6 +20,19 @@ Joining requires a host or guest invite code, or a signed invitation.
 The stack uses Next.js App Router, React, TypeScript, shadcn/ui with Base UI, and Tailwind CSS v4.
 Component source lives in `src/components/ui/`. Theme variables live in `src/app/globals.css`.
 System fonts require no external font service.
+
+## Installed web app
+
+`src/app/manifest.ts` serves `/manifest.webmanifest`; Next.js adds its HTML link automatically.
+The manifest uses standalone display with `/` as its identity, scope, and start URL. Orientation is not locked.
+The launch URL never contains an invitation or participant name.
+The PNG icons in `public/icons/` and `src/app/apple-icon.png` are raster versions of `src/app/icon.svg`.
+The layout defines the browser theme color and Apple standalone metadata.
+
+Installation uses the browser's own controls. See [the installation instructions](../README.md#install-the-app).
+The app has no service worker or offline cache. Calls require network access, and admission responses remain uncached.
+Use trusted HTTPS for device installation checks. Test launch, rotation, permissions, and leave/rejoin in the installed app.
+Browser automation does not prove installation or capture behavior in an installed iPhone app.
 
 ## Configure private calls
 
@@ -45,8 +59,12 @@ Set the two codes once in `.env.local`, using different randomly generated value
 Set `CALL_ROOM_NAME` to `lsl-` followed by a UUID, for example `lsl-12345678-1234-4234-8234-123456789abc`.
 Both people open the same home page address. Give the guest only `GUEST_INVITE_CODE`; keep `HOST_INVITE_CODE` for yourself.
 You can also append `#invite=<code>` to the home page address, using the exact configured host or guest code.
-The link fills the masked, read-only code field. Enter a name and select Join session. The app removes the fragment after reading it.
+The link fills the read-only code field. Enter a name and select Join session. The app removes the fragment after reading it.
 Links use the same 20-128 character code requirements and server admission checks.
+The code uses a text input with autocomplete disabled and password-manager ignore hints.
+Browsers and extensions can ignore these hints. Verify saved-password behavior in the browsers you use.
+[MDN autocomplete guidance](https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Turning_off_form_autocompletion),
+[1Password field hints](https://www.1password.dev/web/compatible-website-design).
 Codes are case-sensitive. They have no automatic expiry and remain valid after a server restart.
 Changing a code and restarting blocks future exchanges with the old code. Keep the room name unchanged to preserve participant places.
 A reused code replaces its previous connection. Host and guest have the same media permissions; the host code is not an admin credential.
@@ -186,10 +204,9 @@ Raw evidence stays in ignored `artifacts/`. Invitation-bearing browser tests dis
 The intended hosting uses LiveKit Cloud Build and Vercel Hobby free plans.
 Verify account plans and current limits before deployment. Accept temporary service loss at free limits.
 Public deployment is pending Phase 4. Verify the selected account plans before enabling hosted admission.
-Set `ADMISSION_ENABLED=false` and restart or redeploy to block new token issuance.
-Existing calls continue. End them through the LiveKit room administration API when needed.
-The documented `lk room delete <room-name>` command also disconnects participants when the LiveKit CLI is configured.
-Already issued tokens can admit participants until their five-minute expiry; disabling the endpoint does not revoke them.
+Use `npm run room -- status` to inspect the configured room without printing participant details.
+Use `npm run room -- close --confirm` only when you intend to disconnect that room's participants.
+Follow [the shutdown procedure](operations.md#stop-admission-and-end-calls) to disable admission and handle issued tokens and older deployments.
 See [Privacy and cost](../planning-docs/privacy-and-cost.md) for data boundaries and operator limitations.
 
 ## Repository map

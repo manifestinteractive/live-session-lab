@@ -128,7 +128,7 @@ test("invite code entry uses a POST, supports correction, and clears on reload",
   page.on("request", (request) => requests.push(request.url()));
   await page.goto("/");
   const input = page.getByLabel("Invite code", { exact: true });
-  await expect(input).toHaveAttribute("type", "password");
+  await expect(input).toHaveAttribute("type", "text");
   await page.getByLabel("What is your name?").fill("Test visitor");
   const join = page.getByRole("button", { name: "Join session" });
   await expect(join).toBeDisabled();

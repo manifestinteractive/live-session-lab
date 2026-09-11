@@ -729,6 +729,8 @@ function CallExperience({
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                     autoComplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
                     maxLength={40}
                     disabled={pending}
                     aria-describedby="call-name-help"
@@ -743,12 +745,15 @@ function CallExperience({
                     <FieldLabel htmlFor="call-code">Invite code</FieldLabel>
                     <Input
                       id="call-code"
-                      type="password"
+                      type="text"
                       value={code}
                       readOnly={codeFromLink}
                       onChange={(event) => setCode(event.target.value)}
                       autoComplete="off"
+                      data-1p-ignore
+                      data-lpignore="true"
                       autoCapitalize="none"
+                      autoCorrect="off"
                       spellCheck={false}
                       maxLength={128}
                       disabled={pending}

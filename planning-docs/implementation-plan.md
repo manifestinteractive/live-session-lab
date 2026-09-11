@@ -2,7 +2,7 @@
 
 Deliver one authorized phase at a time, then stop for human review.
 The application contains the Phase 1-3 capabilities below. Release acceptance remains subject to [Validation](validation.md).
-Phase 4 has not started.
+Phase 4 local handoff preparation is complete. Deployment and hosted acceptance require separate authorization and results.
 
 This plan describes the intended release. Use [Architecture](architecture.md) for decisions and the [developer guide](../docs/developers.md) for commands.
 

@@ -35,7 +35,7 @@ for (const role of ["host", "guest"] as const) {
     await page.goto(`/#invite=${encodeURIComponent(code)}`);
     const input = page.getByLabel("Invite code", { exact: true });
     await expect(input).toHaveValue(code);
-    await expect(input).toHaveAttribute("type", "password");
+    await expect(input).toHaveAttribute("type", "text");
     await expect(input).not.toBeEditable();
     await input.focus();
     await page.keyboard.type("replacement");

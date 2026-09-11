@@ -5,6 +5,9 @@
 Use temporary names and test conversations. This demo is not intended for sensitive real-world use.
 The application adds no recording, transcription, analytics, database, or stored call history.
 
+Installing the web app lets the browser or operating system retain its name, icon, and public launch address.
+The manifest contains no invitation credentials. Installation adds no application storage of names, codes, or call content.
+
 | Data                                 | Handling                                                                                                           |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
 | Camera/microphone preview            | Stays on the participant's device until joining. Starts after an explicit media action.                            |
@@ -78,7 +81,8 @@ Do not describe an in-memory limit as protection across serverless instances.
 
 Keep admission disabled during shutdown. Account for the five-minute lifetime of issued participant tokens and SDK reconnect behavior.
 Invitation expiry and room empty timeouts do not terminate active calls.
-Verify that rooms are closed. Phase 4 must verify exact operator commands and resource-removal procedures for the selected deployment.
+Use [Operations](../docs/operations.md) for room commands, shutdown verification, and removal procedures.
+Hosted shutdown acceptance remains pending. Saving environment changes does not update older deployments; protect or remove their admission endpoints.
 See the [developer guide](../docs/developers.md#operating-limits) for local controls.
 
 ## Local phone testing

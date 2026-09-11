@@ -36,7 +36,7 @@ Configuration and commands belong in the [developer guide](../docs/developers.md
 
 1. The operator privately shares a host code, guest code, or signed invitation link.
 2. The browser reads `#invite`, removes the fragment, and retains the credential in memory.
-3. A code link fills the masked, read-only code field. A signed invitation hides that field.
+3. A code link fills the read-only code field. A signed invitation hides that field.
 4. The participant enters a temporary name, selects media, and requests admission.
 5. The browser sends either `{code, displayName}` or `{invitation, displayName}` through same-origin POST.
 6. The server validates origin, admission state, content type, input shape, and credential before provider operations.
@@ -111,6 +111,19 @@ Fullscreen is available only after joining. Use native element fullscreen when s
 The fullscreen surface stays 16:9 as the viewport changes. Unused space is black; video uses contain scaling in fullscreen.
 Menus and leave confirmation stay inside the fullscreen stage. The fallback restricts outside interaction and supports Escape.
 Leaving or unmounting releases fullscreen and restores page interaction. No screen orientation lock is required.
+
+## Installed web app
+
+The static manifest requests standalone display and launches `/` without invitation credentials.
+Next.js publishes the manifest and Apple icon metadata. PNG installation icons use the existing application logo.
+Installation uses browser controls and does not add a service worker, offline storage, or persistent admission credentials.
+Orientation remains unrestricted. Installed apps require the same network access and admission checks as browser tabs.
+
+## Operator access
+
+The local `npm run room` command uses the official server SDK to inspect or close one selected room.
+It reads operator configuration locally and prints only state and participant counts. Closing requires `--confirm`.
+There is no public administration route. Hosting and shutdown procedures are in [Deployment](../docs/deployment.md) and [Operations](../docs/operations.md).
 
 ## Decisions
 

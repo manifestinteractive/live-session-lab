@@ -1,7 +1,7 @@
 # Validation
 
 This record separates application checks, provider tests, and physical-device reports.
-Required cases are acceptance criteria, not claims that testing occurred. Phase 4 has not started.
+Required cases are acceptance criteria, not claims that testing occurred. Phase 4 local handoff preparation is complete; hosted acceptance is pending.
 
 ## Required checks
 
@@ -51,6 +51,55 @@ Raw screenshots remain in ignored `artifacts/playwright/cleanup-*.png`.
 
 The session-start command returned matching context from the repository root and `docs/`.
 Final formatting, lint, scaffolding, and whitespace checks passed after documentation updates.
+
+## Phase 4 local handoff verification
+
+Verified on 2026-09-11. Deployment and live operator checks were not performed.
+
+| Check                       | Actual result                                                                                                                    |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run ai:verify`         | Passed scaffolding, formatting, lint, types, 96 unit tests, 100 browser tests, and production build.                             |
+| Browser skip                | One Chromium-only native fullscreen case remains intentionally skipped in WebKit.                                                |
+| Room command tests          | 15 tests passed with mocked provider operations, including confirmation, selected-room deletion, status, and sanitized failures. |
+| `npm run room -- --help`    | Passed without a provider request.                                                                                               |
+| Documentation review        | Checked official LiveKit room APIs and quotas through its documentation MCP, plus official Vercel hosting documentation.         |
+| Hosting and operator guides | Prepared in `docs/deployment.md` and `docs/operations.md`. Actual account settings and hosted behavior remain unverified.        |
+
+These changes do not modify the application interface or fullscreen behavior.
+No LiveKit room was inspected or terminated during this phase. No provider allowance was consumed by these checks.
+Physical shutdown, hosted admission, and account confirmation remain release requirements.
+
+## Join-field autofill checks
+
+Verified on 2026-09-11 after changing invite entry to a text input and adding password-manager ignore hints.
+`npm run ai:verify` passed scaffolding, formatting, lint, types, 96 unit tests, 100 browser tests, and production build.
+The Chromium-only native fullscreen test remains intentionally skipped in WebKit.
+Existing tests confirmed manual code entry, POST exchange, reload cleanup, and read-only codes supplied through links.
+
+Playwright MCP confirmed autocomplete is off for both fields and both password-manager hints are present.
+Keyboard entry enabled Join session. The agent viewed screenshots at 320, 390, 768, and 1440 pixels, landscape, and 200% text.
+Focus remained visible, and no horizontal page overflow or console warnings/errors were observed.
+Screenshots remain in ignored `artifacts/playwright/autofill-*.png`.
+
+The isolated browser has no saved passwords or password-manager extensions.
+Saved-password prompts and autofill behavior in the user's browser, including iPhone Safari, remain unverified.
+Browsers and extensions can ignore page hints. No provider connection or physical-device check was performed.
+
+## Web app manifest checks
+
+Verified on 2026-09-11. The full verification passed scaffolding, formatting, lint, types, 96 unit tests, 100 browser tests, and build.
+One Chromium-only native fullscreen case remains intentionally skipped in WebKit.
+The final production build passed again after removing a duplicate metadata tag.
+
+Playwright MCP verified the manifest link, its JSON content type, standalone display, and credential-free `/` launch configuration.
+Chromium parsed the manifest without errors. Both PNG icons decoded at their declared 192 and 512 pixel sizes.
+The 180 pixel Apple icon loaded, and the generated standalone metadata was present.
+The installability check reported only `in-incognito` for the isolated MCP browser. No installation was performed.
+
+The agent viewed the application icon and six page screenshots at the required widths, landscape, and 200% text.
+No horizontal page overflow or console warnings/errors were observed. Screenshots remain in ignored `artifacts/playwright/manifest-*.png`.
+Actual desktop installation and iPhone Home Screen launch, permissions, rotation, and calls remain unverified.
+These checks used the local production build with admission disabled and did not connect to LiveKit.
 
 ## Scaffolding evidence
 
@@ -116,7 +165,8 @@ Use a Mac and a physical iPhone with headphones. Test Chrome and Safari on the M
 
 | Check                                                                                | Status                                                                 |
 | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| Full verification after pre-release cleanup                                          | Pending.                                                               |
+| Full verification after pre-release cleanup                                          | Passed on 2026-09-11, including Phase 4 local preparation.             |
+| Installed app on iPhone and desktop                                                  | Not run. Check fresh launch, icons, permissions, rotation, and calls.  |
 | Current UI on physical iPhone Safari                                                 | Not run. Include input menus, permission discovery, and code links.    |
 | Fullscreen orientation and confirmed leave on physical devices                       | Not run. Include portrait and landscape.                               |
 | Wi-Fi/cellular calls and network handoff                                             | Not run. A local IP cannot support cellular-only access.               |
