@@ -1,19 +1,21 @@
 ---
 name: livekit-admission
-description: Implement or review Live Session Lab invitation exchange, token issuance, and LiveKit media ownership during Phase 2 or later.
+description: Implement or review Live Session Lab invitation exchange, token issuance, and LiveKit media ownership.
 ---
 
 # LiveKit admission and media ownership
 
 Read `planning-docs/architecture.md` for admission and `planning-docs/privacy-and-cost.md` for data handling.
-Use one-hour invitation validity by default and five-minute participant tokens.
-Apply the two-participant limit through LiveKit on every room-creation path, including recreation.
+Reusable host and guest codes select two fixed places. Signed invitations default to one hour of validity.
+Use five-minute participant tokens and two stable identities per room, including after room recreation.
+Keep the provider participant limit as a secondary setting. Credential reuse replaces its existing connection.
 Use `livekit_docs` MCP to verify current WebRTC transport, React component, and server SDK APIs before editing integrations.
 Fetch relevant pages after searching. Check compatible package versions. Do not scaffold LiveKit AI Agents.
 If MCP is unavailable, use official pages at https://docs.livekit.io/.
 
 Keep invitation signing and token issuance on the server. Use an established signing library.
-Validate signature and expiry before selecting the token room. The validated invitation determines room grants.
+Validate reusable codes against server configuration, or verify signed invitation signature and expiry.
+Only the validated credential determines the room and participant place.
 Reject room substitution. Generate participant identities on the server.
 Test valid exchange, expired/tampered/missing credentials, disallowed origin, invalid input, and room substitution.
 Assert short token expiry, ordinary participant grants, server-generated identity, and non-cacheable responses.

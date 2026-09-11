@@ -1,72 +1,60 @@
 # Live Session Lab development plan
 
-Status: Phase 2 code received human acceptance. Phase 3 implements resilience and privacy.
-The user reported successful desktop/iPhone streaming. Remaining physical-device checks and Phase 3 human review are pending.
-Phase 4 is unstarted.
-Plan date: 2026-09-10.
+Live Session Lab is an independent WebRTC experiment for private, two-person browser calls.
+These documents define the complete project requirements and the human review process for AI-assisted development.
 
-Live Session Lab is Peter Schmalfeldt's independent experiment with WebRTC and AI-assisted development.
-The goal is a working browser prototype that others can inspect, run locally, and try through private invitations.
-These documents define the complete project requirements.
+Status: the application and pre-release cleanup are ready for review. Phase 4 has not started.
+The [validation record](validation.md) identifies verified behavior and outstanding release checks.
 
-## Reading order
+## Document index
 
-| Document                                      | Purpose                                                                  |
-| --------------------------------------------- | ------------------------------------------------------------------------ |
-| [Architecture](architecture.md)               | System boundaries, admission flow, interfaces, and technology decisions. |
-| [Implementation plan](implementation-plan.md) | Ordered work, phase acceptance criteria, and human review points.        |
-| [Privacy and cost](privacy-and-cost.md)       | Data handling, free limits, and operator controls.                       |
-| [Validation](validation.md)                   | Automated checks, physical-device tests, and actual results.             |
+| Document                                      | Purpose                                                                      |
+| --------------------------------------------- | ---------------------------------------------------------------------------- |
+| [Architecture](architecture.md)               | System boundaries, admission, media ownership, and technology decisions.     |
+| [Implementation plan](implementation-plan.md) | Delivery phases, dependencies, acceptance criteria, and human review points. |
+| [Privacy and cost](privacy-and-cost.md)       | Data handling, provider limits, and operator controls.                       |
+| [Validation](validation.md)                   | Required cases, actual evidence, and checks still needed.                    |
 
-See [AI development setup](../docs/ai-development.md) for the installed development tools and their earlier validation results.
+Use the [developer guide](../docs/developers.md) for commands and configuration.
+Use [AI development](../docs/ai-development.md) for Codex tools and skills.
 
-## Product scope
+## Product requirements
 
-The first release supports two people in a private room. The public introduction page explains the experiment and invitation requirement.
-It does not let anonymous visitors create rooms or issue their own invitations.
+The home page introduces the project and contains the working call form. Calls require private credentials.
+The public interface does not issue invitations or let anonymous visitors create rooms.
 
-Each room has two different invitations, one per participant. A participant opens their invitation and enters a temporary display name.
-Reusing an invitation replaces its existing connection. This is an explicit demo tradeoff, not a strict device reservation system.
-They explicitly enable camera or microphone, preview media, select available inputs, and join.
-They can see participant presence, control their own media, leave, and rejoin while admission remains valid.
-Audio-only participation is supported. Capture devices must stop when the participant leaves or abandons preview.
+A reusable host code and a different guest code select two fixed places in one configured room.
+Codes remain valid across server restarts until the operator changes them. Optional signed invitations expire.
+Participants enter a temporary display name. Reusing a code or invitation replaces its existing connection.
+Host and guest receive the same participant permissions. Strict rejection of every additional device is outside this demo.
 
-Use simple participant-facing language and a collapsed Connection details panel for technical status.
-Show empty, loading, connecting, reconnecting, disconnected, and error states from real SDK information.
-Static demonstrations must say they are disconnected. Never present simulated video as a working call.
+Participants can preview devices, choose inputs, and join with video, audio only, or both inputs off.
+Media controls reflect SDK state. The remote participant fills the main view; local video appears in an inset.
+Joined sessions offer fullscreen with a 16:9 surface, black margins, and orientation support.
+Device menus and connection details remain available inside the video stage.
+Leaving requires confirmation, releases capture devices, and returns to a blank join form.
 
-Use calm, neutral styling with readable text, strong contrast, visible focus, and responsive controls.
-Validate Chrome and Safari on a Mac, plus Safari on a physical iPhone.
-Record other browsers as untested until actual checks occur. Do not claim broader capacity or browser coverage.
+The interface must handle permission denial, failed joins, and temporary connection loss.
+It must support keyboard operation, visible focus, usable touch targets, and enlarged text.
+Validate Chrome and Safari on the Mac, plus Safari on a physical iPhone. Record untested cases explicitly.
 
-## Stack and exclusions
+## Stack and limits
 
-| Area        | Requirement                                                                               |
-| ----------- | ----------------------------------------------------------------------------------------- |
-| Application | Next.js App Router, React, and TypeScript.                                                |
-| Interface   | shadcn/ui component source in the repository; Tailwind CSS v4 and shared theme variables. |
-| Media       | Official LiveKit browser, React component, and server SDKs; LiveKit Cloud Build.          |
-| Hosting     | Vercel Hobby for the personal, non-commercial demo.                                       |
-| Packages    | npm with the existing lockfile; verify compatible versions before installation.           |
+Use Next.js App Router, React, TypeScript, shadcn/ui source, Tailwind CSS v4, and official LiveKit SDKs.
+Use npm with the lockfile. Target LiveKit Cloud Build and Vercel Hobby free plans only.
+Accept service loss at free limits. Verify account plans and current allowances before deployment.
 
-AI assistance is part of development, not an application feature.
-Do not add a database, user accounts, recording, transcription, analytics, or an AI voice agent.
-Screen sharing, chat, and file transfer are outside the first release.
-Use test conversations only. Do not design this release for sensitive real-world use.
+Use test conversations only. Do not add a database, accounts, recording, transcription, analytics, or AI application features.
+Chat, screen sharing, and file transfer are outside this release.
 
 ## AI development workflow
 
-The human selects a phase and reviews its acceptance criteria before the coding agent starts.
-The coding agent reads the relevant requirements, checks official integration documentation, and implements one coherent increment.
-Use repository skills for the relevant work. Use optional review agents only when delegation is requested.
-Give review agents bounded tasks and coordinate exclusive access to the shared browser.
+The human selects the work and reviews its acceptance criteria. The coding agent reads the relevant requirements before implementation.
+Use official integration documentation and repository skills. Use review agents only when delegation is requested.
 
-Run automated checks and inspect the rendered interface through Playwright MCP.
-The agent must view screenshots. Saving a screenshot alone does not establish visual inspection.
-The human performs physical-device checks that the agent cannot complete and records actual outcomes.
+The agent runs automated checks and views actual screenshots through Playwright MCP for UI changes.
+The human performs physical-device checks. Fake devices and mocked connections are separate evidence.
 
-At each phase boundary, record commands, results, limitations, and review points in [Validation](validation.md).
-Suggest a concise commit message and stop. Do not start another phase without instruction.
-Commit, push, and deploy only when instructed. Never invent test results, development times, or human review history.
-
-Update architecture decisions when requirements change. Keep planned behavior separate from implemented behavior and observed results.
+Record actual outcomes and limitations in [Validation](validation.md). Record design decisions in [Architecture](architecture.md).
+At each phase boundary, provide review points and a suggested commit message, then stop for review.
+Commit, push, and deploy only when instructed. Do not start another phase without authorization.

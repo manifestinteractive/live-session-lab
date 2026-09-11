@@ -3,9 +3,16 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Live Session Lab",
-  description: "An independent experiment with browser video. This version is a disconnected interface demonstration.",
+  robots: { index: false, follow: false },
+  referrer: "no-referrer",
+  description:
+    "A little closer, right in your browser. Join a private video call with your invite code.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
 }

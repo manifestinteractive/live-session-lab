@@ -1,0 +1,21 @@
+# Secrets, local notes, generated output, and browser evidence
+.env*
+plan.md
+node_modules/
+.next/
+.cache/
+artifacts/
+coverage/
+out/
+dist/
+test-results/
+playwright-report/
+blob-report/
+next-env.d.ts
+*.tsbuildinfo
+package-lock.json
+
+# Provider-owned tooling and upstream skill/license sources
+.agents/
+.codex/
+docs/licenses/

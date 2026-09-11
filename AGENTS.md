@@ -2,9 +2,9 @@
 
 ## Scope and communication
 
-Read `planning-docs/README.md` and `docs/ai-development.md` before implementation.
+Read `planning-docs/README.md`, `docs/developers.md`, and `docs/ai-development.md` before implementation.
 Use the linked planning documents as the complete project requirements.
-Follow the user's current phase instruction. Scaffolding does not authorize Phase 1 implementation.
+Follow the user's current instruction. Do not infer authorization for another phase.
 Complete one requested phase, record actual checks and limitations, then stop for review.
 Do not commit, push, or deploy without the user's instruction.
 Preserve existing edits. Do not replace this repository with a generated starter.
@@ -24,10 +24,11 @@ Use npm and keep `package-lock.json` synchronized. The package contains the appl
 Verify current official documentation and compatible versions before adding application dependencies.
 Keep SDK integration in a few components and server modules.
 This is human-to-human video. Do not use an AI voice-agent starter.
+The working call and introduction share `/`.
 Do not add a database, recording, transcription, analytics, AI features, or user accounts.
-Label static demonstration states as disconnected demonstrations.
 
-Invitations must protect token issuance. Keep signing secrets and API secrets on the server.
+Reusable host and guest codes or signed invitations must protect token issuance. Keep all codes and secrets on the server.
+Host and guest codes select two fixed places in one configured room. Host does not grant administration permissions.
 Never print credentials, invitation URLs, access tokens, or participant display names in logs or reports.
 Use test identities. Keep raw browser evidence under ignored `artifacts/`.
 Read `.agents/skills/livekit-admission/SKILL.md` for admission and media ownership work.
@@ -40,15 +41,22 @@ Use `shadcn` MCP and `.agents/skills/shadcn/SKILL.md` for component discovery an
 The selected component registry is the official `@shadcn` registry.
 Use `npm run ai:shadcn -- <arguments>` instead of the upstream skill's `npx shadcn@latest` examples to preserve the pinned version.
 Run `npm run ai:shadcn -- info --json` explicitly when project context is needed; do not assume inline skill commands executed.
-Create `components.json` only during authorized Phase 1 implementation. Skill installation does not authorize app initialization.
 Use `playwright` MCP to inspect the running local app, including actual screenshots.
 Read `.agents/skills/browser-validation/SKILL.md` when testing UI changes.
 Read `.agents/skills/phase-delivery/SKILL.md` when implementing a requested phase.
 
+After creating or modifying files, run `npm run format` before validation and handoff.
+Prettier owns formatting, including Tailwind class order. Follow `.prettierrc.json` and `.prettierignore`.
+Use `npm run lint` for code validation and `npm run lint:fix` for supported automatic fixes. Review fixes, then format again.
+Do not suppress formatting or lint failures to make checks pass. Preserve the user's changes when applying fixes.
+The formatter excludes local secrets, generated files, and upstream tooling sources. Do not override these exclusions.
+The pre-commit hook formats and lints staged files through `npm run precommit`. Do not bypass it.
+GitHub Actions runs `npm run ai:verify` on pull requests and pushes to `main`. Keep these checks working.
 Run `npm run ai:check` for scaffolding changes.
 Run `npm run ai:shadcn:smoke` after changing shadcn MCP tooling.
 Run `npm run ai:mcp:smoke` after changing browser tooling.
-Use `npm run ai:verify` for lint, type checks, tests, and build.
+Use `npm run ai:verify` for formatting, lint, type checks, tests, and build.
+Verification checks formatting without changing files and fails on lint warnings.
 Use `planning-docs/validation.md` for acceptance cases and actual results, including Mac and iPhone checks.
 Keep `lint`, `typecheck`, `test`, `test:e2e`, and `build` as real application checks.
 Missing app commands are an incomplete setup, never a passing application check.

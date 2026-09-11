@@ -20,7 +20,7 @@ Exercise keyboard focus, labels, toggle states, and status announcements. Inspec
 Fix relevant issues and repeat affected checks. Save synthetic evidence under `artifacts/` with descriptive filenames.
 Keep repeatable regression tests in the application test suite; MCP exploration does not replace those tests.
 
-Phase 1 checks verify the static shell and disconnected labels. They must not claim working calls.
+UI checks and mocked connections must not claim real media transport.
 For media work, test preview ownership, leaving, rejoining, permissions, and audio-only behavior.
 Use separate browser contexts for participant isolation. A tab alone does not prove session isolation.
 Fake devices support repeatable automation. Never report them as proof of physical devices or real audio/video transport.

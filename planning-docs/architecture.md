@@ -1,221 +1,128 @@
 # Architecture
 
-Status: Phase 1 serves the introduction and pre-join shell at `/`, and the room shell at `/room`.
-Phase 2 adds the private `/call` route and `POST /api/token`. Two signed participant places map to fixed identities.
-Synthetic media transport passed; physical-device acceptance remains unverified. See [Validation](validation.md).
-The diagram describes the target hosting. The implementation currently runs locally.
-
-## System boundaries
+## System boundary
 
 ```mermaid
 flowchart LR
-    O[Local operator command] -->|Signed invitation| B[Participant browser]
-    B -->|HTTPS page requests| N[Next.js on Vercel Hobby]
-    B -->|Same-origin POST with invitation| T[Next.js token endpoint]
-    T -->|Validate and sign token| S[Server-only secrets]
-    T -->|Short-lived participant token| B
-    B <-->|Signaling and WebRTC media| L[LiveKit Cloud Build]
-    O -->|Authorized room administration| L
+  Operator[Local operator] -->|Private code or signed invitation| Browser[Participant browser]
+  Browser -->|HTTPS page and same-origin admission POST| Next[Next.js on Vercel]
+  Next -->|Validate room and issue participant token| LiveKit[LiveKit Cloud]
+  Browser <-->|Signaling and encrypted WebRTC media| LiveKit
+  LiveKit <-->|Signaling and encrypted WebRTC media| Peer[Other participant]
 ```
 
-The browser owns preview devices and participant controls. LiveKit handles signaling and media transport.
-The Next.js server validates admission and issues participant tokens. Vercel does not relay call media.
-The local operator creates invitations and manages active rooms. No database stores invitations or call history.
+Next.js serves the interface and the token endpoint. LiveKit handles signaling and WebRTC media transport.
+The application has no database or user accounts. Each room has two server-generated participant identities.
+The public interface is at `/`. The only application API is `POST /api/token`.
 
-## Interface structure
+## Responsibilities
 
-Use shadcn/ui for application controls and Tailwind CSS v4 for layout and shared theme variables.
-Store component source in the repository. Add only components used by the interface.
-Integrate into the existing repository without replacing its scaffolding or package manifest.
+| Module                                                 | Responsibility                                                                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `src/app/page.tsx` and `src/components/page-frame.tsx` | Page composition, introduction, and footer.                                                |
+| `src/components/private-call.tsx`                      | Credential lifecycle, join form, input menus, SDK state presentation, and connected media. |
+| `src/lib/call-session.ts`                              | Local track ownership, input discovery, joining, cancellation, and cleanup.                |
+| `src/lib/call-feedback.ts`                             | Fixed participant-facing status and error messages.                                        |
+| `src/components/video-stage.tsx`                       | Main video, local inset, media controls, and popovers.                                     |
+| `src/lib/use-video-fullscreen.ts`                      | Native fullscreen, viewport fallback, focus management, and exit cleanup.                  |
+| `src/lib/server/admission.ts`                          | Request validation, provider room validation, and restricted token issuance.               |
+| `src/lib/server/invite-codes.ts`                       | Server configuration and timing-safe code comparison.                                      |
+| `src/lib/server/invitations.mjs`                       | Signed invitation validation and stable participant identities.                            |
+| `scripts/operator/invite.mjs`                          | Local generation of optional expiring invitation pairs.                                    |
 
-Use official LiveKit components and hooks for tracks, playback, and connection state.
-Connect custom media controls to SDK actions and observed SDK state. Do not maintain a competing media-state model.
-Keep integration in a few understandable browser components and server modules.
-Do not create an abstraction for hypothetical replacement video providers.
+Configuration and commands belong in the [developer guide](../docs/developers.md). Test outcomes belong in [Validation](validation.md).
 
-Configure shadcn/ui and Tailwind during Phase 1 using the official instructions:
-[shadcn/ui for Next.js](https://ui.shadcn.com/docs/installation/next) and
-[Tailwind CSS for Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs).
+## Admission flow
 
-## Phase 1 implementation
+1. The operator privately shares a host code, guest code, or signed invitation link.
+2. The browser reads `#invite`, removes the fragment, and retains the credential in memory.
+3. A code link fills the masked, read-only code field. A signed invitation hides that field.
+4. The participant enters a temporary name, selects media, and requests admission.
+5. The browser sends either `{code, displayName}` or `{invitation, displayName}` through same-origin POST.
+6. The server validates origin, admission state, content type, input shape, and credential before provider operations.
+7. The server validates the room configuration and issues a five-minute, room-scoped LiveKit token.
+8. The browser connects to LiveKit and publishes only the selected local media.
 
-Next.js 16.3.4 uses React 19.3.0 and TypeScript 6.0.3.
-Tailwind CSS 4.3.3 defines responsive layouts and semantic theme variables in `src/app/globals.css`.
-The official shadcn CLI initialized the Base UI `base-nova` preset in `components.json`.
-The repository retains Button, Card, Field, Input, Badge, Alert, NativeSelect, and Empty source.
-Label and Separator are dependencies of Field. No custom registry is configured.
+The endpoint rejects cross-site requests, extra fields, bodies larger than 4,096 bytes, and client-selected room or identity values.
+Names contain 1-40 trimmed characters without control or format characters.
+All responses use `Cache-Control: no-store, private`, `Pragma: no-cache`, and `Vary: Origin`.
+Errors return fixed categories. Request bodies and credentials must not enter logs.
 
-`src/components/session-preview.tsx` contains the shared demonstration interface.
-Route modules remain small. The display-name field holds input only in the current browser document.
-Both routes show disconnected labels. Media controls and admission are disabled.
-There are no media SDKs, capture requests, admission endpoints, or provider requests in Phase 1.
-The room preview link opens a public layout demonstration. It does not admit a participant to a call.
+### Reusable codes
 
-## Phase 2 interfaces
+Distinct host and guest codes select places 1 and 2 in one configured `lsl-UUID` room.
+Codes use 20-128 ASCII letters, digits, underscores, or hyphens. Placeholder values are rejected.
+Use cryptographically random values. Codes are case-sensitive and have no automatic expiry.
+They remain valid across server restarts. Rotation blocks future exchanges after the server applies the new configuration.
 
-| Interface                | Input                                                                       | Result                                                  |
-| ------------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Local invitation command | Room identifier and optional validity duration; server-only signing secret. | Shareable invitation with one-hour default validity.    |
-| `POST /api/token`        | Invitation credential and temporary display name.                           | LiveKit server URL and a five-minute participant token. |
-| LiveKit room connection  | Issued token and explicit media choices.                                    | SDK connection state and local/remote media.            |
+### Signed invitations
 
-The invitation command intentionally outputs the credential for the operator to share.
-Do not copy that output into logs, test artifacts, documentation, or chat.
-Use an established cryptographic library for invitation signing and the official server SDK for LiveKit tokens.
+The local operator command signs one invitation for each place. It defaults to one hour of validity.
+Supported validity is 1-1,440 minutes. The command can create a random room name or use a supplied room.
+Invitations use HS256 with a separate signing secret of at least 32 bytes.
+Validation checks the signature, issuer, audience, room, place, timestamps, and maximum lifetime.
+The endpoint rechecks expiry after the provider request. Signing an invitation does not create a provider room.
 
-The token endpoint validates input, signature, expiry, and request origin before issuing a token.
-Use the configured application origin as the expected origin; do not trust an arbitrary request host.
-Reject missing or invalid credentials, room substitution, and disabled admission.
-Return useful error categories without revealing credential content or internal errors.
-Return token responses with `Cache-Control: no-store`. Keep signing and API secrets server-side.
+### Two participant places
 
-Use the validated invitation to select the room. Generate participant identities on the server.
-Grant room join, subscription, and camera/microphone publishing only. Do not grant room administration or data publishing.
-Apply the two-participant limit on every room-creation path, including room recreation after all participants leave.
-The application can issue only two identities per room. LiveKit replaces duplicate identities.
-Keep room configuration as a secondary capacity setting. Do not add a browser counter or a read-then-count admission check.
-LiveKit exposes the room participant limit through its [RoomService API](https://docs.livekit.io/reference/other/roomservice-api/).
+Identity derives from the validated room and place. Concurrent exchanges cannot allocate a third identity.
+Reusing a code or invitation replaces its current connection. The other place remains connected.
+Host is a participant label, not an administrative role. Credentials do not establish a person's real identity.
 
-## Phase 2 ownership and admission
+Room creation and token room configuration specify `maxParticipants: 2`, a 300-second empty timeout, and a 20-second departure timeout.
+The endpoint refuses a room with an incompatible name or participant limit.
+The provider limit is a secondary setting. Two stable identities establish the application's admission boundary.
+This is a replacement model, not a strict device reservation system.
 
-`src/lib/server/invitations.mjs` signs and validates room-scoped HS256 invitations with `jose`.
-The issuer and audience are specific to this application. Invitations contain an opaque room identifier and an expiry.
-The local `scripts/operator/invite.mjs` command creates two invitations for a generated room with one-hour validity.
-Each invitation contains a signed `seat` value, either 1 or 2. Missing or invalid places are rejected, including old shared invitations.
-The server hashes a domain-separated room identifier and signed place to derive a stable identity.
-An identity is public metadata, not a credential. It stays stable after invitation renewal and signing-key rotation.
-No operator name or participant name enters the room identifier.
+Tokens permit room joining, subscription, and camera/microphone publication only.
+They disable data publication, participant metadata updates, room administration, room creation, room listing, and recording grants.
+Invitation expiry, code rotation, and disabled admission do not terminate existing calls or revoke issued tokens.
 
-`src/lib/server/admission.ts` validates origin, the admission flag, JSON shape, name length, and invitation claims.
-It reads at most 4,096 body bytes and rejects client-provided room or identity fields.
-It calls the official `LiveKitAPI` to create or retrieve the validated room with `maxParticipants: 2`.
-If the returned room has a different limit, admission fails closed.
-Each five-minute token also includes the same room configuration for automatic recreation.
-Existing rooms ignore token configuration. The service response check covers that separate path.
-Returning `maxParticipants: 2` does not establish enforcement; the initial provider test admitted three random identities.
-The revised design issues only two stable identities. Reusing an invitation replaces its current connection.
-The client explains this behavior and stops capture when the SDK reports a duplicate-identity disconnect.
-A count read before token issuance cannot resolve concurrent admission races and is not used.
+## Media ownership and recovery
 
-`src/components/private-call.tsx` reads and removes the URL fragment in its first client effect.
-The credential remains in a React ref. It is never written to persistent storage or rendered in the interface.
-Only Join posts it to the same-origin endpoint. The issued token is passed directly to `room.connect`.
-A reload requires reopening the invitation. Public `/` and `/room` remain disconnected layout previews.
+`CallSession` owns local capture tracks. Preview elements attach and detach those tracks without creating separate capture owners.
+On join, selected tracks publish to the SDK room. Leaving, failed joins, cancellation, and disposal stop owned capture.
+Late capture results from cancelled operations are stopped when they resolve.
 
-`src/lib/call-session.ts` owns preview tracks created by the official browser SDK.
-Explicit button actions start capture. Browser device enumeration after an action does not request additional permissions.
-It bypasses the SDK's pending-capture wait so a reset setup does not depend on an earlier unanswered request.
-Join publishes the existing preview tracks to the connected room. It does not acquire replacement tracks.
-The SDK owns tracks enabled after joining. Leave disconnects with `stopTracks: true` and stops all retained preview tracks.
-A generation counter invalidates late capture and join results after cancellation. Late tracks are stopped immediately.
-Unmount and page exit release capture. A restored page from browser history reloads to avoid retaining an inactive session.
+No capture or enumeration starts automatically when the home page opens.
+Enabling an input starts preview. Opening or refreshing an input menu can request temporary permission when device labels are unavailable.
+Discovery requests only that input type and stops its temporary tracks after enumeration. It does not publish or display them.
+An active input is not reacquired for discovery. Passive device-change events do not request permission.
 
-`RoomContext`, `useConnectionState`, and `useLocalParticipant` provide observed SDK state to the interface.
-`useTracks`, `VideoTrack`, and `RoomAudioRenderer` render participant media. `StartAudio` handles blocked audio playback.
-The application does not maintain optimistic mute state or implement its own reconnect loop.
-SDK and component logging are silenced. User-facing errors use fixed messages without provider payloads or credentials.
+Device selection can occur while an input is off. Media indicators follow actual SDK state.
+LiveKit owns reconnection. The application shows connecting, reconnecting, disconnected, and failure states without a separate reconnect loop.
+Blocked playback offers an explicit audio action. Audio-only participation and joining with both inputs off are supported.
 
-## Participant data flow
+Confirmed leave clears the credential and name, stops capture, exits fullscreen, and returns to the join form.
+Reloading clears in-memory access details. Page exit disposes the session; restored pages reload to avoid stale call state.
+A replaced participant loses its connection and releases capture.
 
-1. Read the invitation from the URL fragment and remove it from the visible URL immediately.
-2. Hold the invitation in browser memory. Enter a temporary display name and explicitly enable preview devices.
-3. On Join, exchange the invitation through the same-origin token endpoint.
-4. Join LiveKit with the issued token. Publish only the media the participant enabled.
-5. On leave or abandoned preview, disconnect and stop locally owned capture tracks.
+## Interface
 
-Transfer preview ownership carefully during join. Failed joins and component unmounts must not leak tracks or duplicate capture.
-Use SDK reconnection behavior. Do not add a competing retry loop.
-Rejoin can reuse an unexpired invitation held in memory to request a new token.
-A page reload clears this memory; the participant must reopen the original invitation.
-Admission expiry limits future admission. It does not end an existing call.
+Tailwind provides responsive layouts and shared theme variables. Repository-owned shadcn/ui components provide accessible controls.
+LiveKit components and hooks supply media behavior. System fonts and local placeholder photographs require no external asset requests.
 
-## Decision record
+The join form and preview have equal heights in the two-column layout. Preview video covers the available frame.
+The connected stage shows the remote participant as the main video and the local participant in a top-right inset.
+Camera-off backgrounds differ for pre-join, local, and remote participants.
+Media controls overlay the video. Device lists and connection details use popovers.
 
-Decisions accepted on 2026-09-10. These are design choices, not test results.
+Fullscreen is available only after joining. Use native element fullscreen when supported, with a viewport fallback when unavailable or rejected.
+The fullscreen surface stays 16:9 as the viewport changes. Unused space is black; video uses contain scaling in fullscreen.
+Menus and leave confirmation stay inside the fullscreen stage. The fallback restricts outside interaction and supports Escape.
+Leaving or unmounting releases fullscreen and restores page interaction. No screen orientation lock is required.
 
-| Decision                                 | Reason and tradeoff                                                                                             |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Managed LiveKit transport                | Keep effort on the application and media lifecycle. Accept provider dependency and free quotas.                 |
-| shadcn/ui and Tailwind v4                | Keep editable components and shared responsive styling. Test accessibility after composition and customization. |
-| Private invitations and two participants | Limit public exposure and keep initial validation focused. Visitors need an operator-provided invitation.       |
-| Signed invitations without a database    | Avoid persistent participant data and another service. Individual invitation revocation is limited.             |
-| Standard encrypted transport             | Keep the first release focused on test conversations. End-to-end media encryption is outside this release.      |
-| Vercel Hobby and LiveKit Build           | Target zero service charges. Accept interruption at free limits and recheck terms before deployment.            |
+## Decisions
 
-Phase 1 implementation decisions on 2026-09-10:
+| Decision                                   | Reason and tradeoff                                                                          |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| Next.js with a same-origin token route     | Keeps interface and admission in one deployable application. Media travels through LiveKit.  |
+| LiveKit official SDKs                      | Provides signaling, media transport, and reconnection without a custom signaling service.    |
+| shadcn/ui with Base UI and Tailwind CSS v4 | Keeps component source and theme control in the repository. Add only required components.    |
+| Two reusable codes with stable identities  | Supports persistent access without a database. Code reuse replaces an active connection.     |
+| Optional expiring signed invitations       | Supports temporary, room-scoped access without stored invitation records.                    |
+| Memory-only credentials                    | Avoids application persistence. Reloading requires entry or a private link again.            |
+| Standard encrypted transport               | Supports the demo scope. End-to-end encryption and compliance claims are excluded.           |
+| Free hosting plans                         | Accepts quota-related service loss. Account settings require verification before deployment. |
 
-| Decision | Reason and tradeoff |
-| --- | --- |
-| Native device selects | Keep the shell simple and usable on mobile. They remain disabled until device integration exists. |
-| System fonts | Avoid an external font download during builds or page loads. |
-| Public `/room` preview | Allow layout review without credentials. This route currently provides no call access. |
-| Separate Playwright versions | Use stable Playwright Test 1.63.0 and the MCP's locked alpha dependency. Resolve each browser installer from its owning package. |
-| Semantic theme and focus override | Maintain consistent contrast and visible keyboard focus after component composition. |
-
-See [Privacy and cost](privacy-and-cost.md) for data boundaries and operational limitations.
-
-Phase 2 implementation decisions on 2026-09-10:
-
-| Decision | Reason and tradeoff |
-| --- | --- |
-| Separate `/call` route | Keep accepted public demonstrations available while private invitations open the functional integration. |
-| `jose` 6.2.12 with HS256 | Use an established signing implementation and a server-only secret. Bearer invitations can be shared until expiry. |
-| Two signed participant places with stable identities | Preserve the database-free demo. Reuse replaces a connection instead of promising strict rejection. Room limits remain secondary. |
-| Single owner for preview tracks | Publish existing capture on join; stop retained tracks after failure or exit. |
-| Disable admission during default browser tests | Make checks independent of local credentials and prevent accidental provider usage. |
-
-SDK versions: `livekit-client` 2.22.3, `@livekit/components-react` 2.9.24, and `livekit-server-sdk` 2.19.0.
-Verified APIs through the LiveKit documentation MCP and the installed SDK declarations.
-References: [tokens and room configuration](https://docs.livekit.io/frontends/reference/tokens-grants/),
-[room management](https://docs.livekit.io/intro/basics/rooms-participants-tracks/rooms/),
-[camera and microphone](https://docs.livekit.io/transport/media/publish/), and
-[React components](https://docs.livekit.io/reference/components/react/).
-
-## Capacity revision for the database-free demo
-
-Selected on 2026-09-10 after the user relaxed strict functional requirements and retained the database-free goal.
-Implementation review remains pending. Actual test outcomes belong in [Validation](validation.md).
-
-Darryn Campbell's LiveKit Community reply describes delayed room metadata synchronization between regions.
-The discussion gives no guaranteed admission delay. A participant count check cannot safely allocate simultaneous serverless requests.
-See the [LiveKit discussion](https://community.livekit.io/t/livekit-cloud-room-with-maxparticipants-2-admits-3-standard-participants/1911/2).
-
-Each room has two separate invitations. Signed participant places map to two stable identities, including after room recreation.
-LiveKit documents that only the most recent connection with a given identity can remain in a room.
-Reusing an invitation replaces its connection. It does not create a third identity.
-The pre-join interface warns about replacement; a displaced participant sees a specific notice and capture stops.
-See [participant identity rules](https://docs.livekit.io/intro/basics/rooms-participants-tracks/participants/).
-
-This is a demo with bearer invitations, not verified participant accounts or a reservation system.
-Someone who obtains an invitation can use its place until expiry, including displacing its existing connection.
-Strict device rejection, approved device transfer, and appointment records are outside the current scope.
-The remaining planned phases do not require a database. Reconsider persistent state only if the product scope changes.
-Retain `maxParticipants: 2` as a secondary setting, not the sole admission boundary.
-Do not claim instantaneous cross-region replacement or stronger guarantees than the provider and recorded tests establish.
-
-## Phase 3 recovery and privacy
-
-The client checks known denied permissions before capture, where the browser supports that query.
-Unsupported queries fall back to the SDK capture request. Error categories map to fixed messages; raw browser errors are not displayed.
-Missing and busy inputs have recovery instructions. Audio-only and listening-only modes use observed SDK state.
-
-Cancel setup disposes the current controller and creates a new browser Room while retaining the invitation.
-It clears the temporary name and stops owned capture. A late permission result is stopped by the disposed controller.
-The application cannot dismiss a native permission prompt. This limitation is explicit in the interface.
-The token POST times out after 15 seconds. There is no application retry loop.
-
-Device changes refresh input choices where the browser emits the event. A manual refresh remains available.
-Track-ended notices clear when the SDK restarts the track. SDK behavior owns recovery of published media.
-Connection feedback distinguishes connecting, reconnecting, and disconnected states. Connection quality comes from the SDK hook.
-The application does not infer bandwidth or invent latency measurements.
-
-Errors receive keyboard focus. Session transitions focus the heading. Active media controls stay near the viewport edge.
-Leave remains available while a device operation is pending; it can dispose that controller and return to setup.
-
-Response headers disable referrers and framing, restrict camera/microphone delegation to the same origin, and disable screen capture.
-The CSP restricts framing, object content, and base URLs. It is not a full script-source policy or a claim of XSS protection.
-
-References: [SDK connection recovery](https://docs.livekit.io/intro/basics/connect/),
-[connection quality hook](https://docs.livekit.io/reference/components/react/hook/useconnectionqualityindicator/),
-[browser capture requests](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia), and
-[device changes](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/devicechange_event).
+See [Privacy and cost](privacy-and-cost.md) for trust boundaries and shutdown limits.

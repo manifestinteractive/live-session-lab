@@ -1,34 +1,30 @@
-# AI development setup
+# AI development
 
-Status: Phase 2 code received human acceptance. Phase 3 implements resilience and privacy.
-The user reported successful desktop/iPhone streaming. Remaining physical-device checks and Phase 3 human review are pending.
-The user selected Codex with GPT-6 Astra. Repository configuration preserves the selected model and permission settings.
-The [development plan](../planning-docs/README.md) defines the application and phase boundaries.
+Use [the developer guide](developers.md) for local configuration, formatting, hooks, and application checks.
+Read [the project plan](../planning-docs/README.md) and `AGENTS.md` before changing the application.
+The human selects the work. The coding agent implements it, records evidence, and stops at the requested review boundary.
+Repository configuration preserves the selected Codex model and permission settings. Do not substitute another model silently.
 
-## Setup
+## Tool setup
 
-Use Node.js 22.12.0 or newer and npm. Run these commands from the repository root:
+After `npm ci`, install the matching MCP browser and run the tooling checks:
 
 ```sh
-npm ci
 npm run ai:browser:install
-npm run test:browser:install
 npm run ai:check
 npm run ai:mcp:smoke
 npm run ai:shadcn:smoke
 ```
 
-The MCP installer downloads its matching Chromium build into ignored `.cache/ms-playwright/`.
-The test installer downloads Chromium and WebKit for the separate application test package.
-If the default npm cache is unavailable, prefix npm commands with `npm_config_cache=.cache/npm`.
-No application credentials are needed for these checks.
+Use `npm run test:browser:install` for the separate application test browsers.
+Installers place browser binaries in ignored `.cache/ms-playwright/` and resolve versions from their owning packages.
+Use `npm_config_cache=.cache/npm` if the default npm cache is unavailable. Tooling checks need no application credentials.
 
-Open a new Codex session from the repository root after configuration changes.
-Project MCP configuration loads only for trusted projects. Check `/mcp` for connected servers.
-The session-start hook needs review and trust through `/hooks` before Codex runs it.
-This is a Codex hook requirement. The hook only prints context; it does not edit files or run tests.
-The hook was prepared here. Its native activation depends on that trust review.
-See the official [MCP configuration](https://developers.openai.com/codex/mcp) and [hook documentation](https://developers.openai.com/codex/hooks).
+Start Codex from the repository root. Open a new session after configuration changes.
+Project MCP configuration requires a trusted project. Check `/mcp` for connected servers.
+Review and trust the session-start hook through `/hooks` before native activation.
+The hook only prints repository context; it does not edit files, run checks, or authorize a phase.
+See [Codex MCP configuration](https://developers.openai.com/codex/mcp) and [hooks](https://developers.openai.com/codex/hooks).
 
 ## Included tools
 
@@ -67,12 +63,22 @@ The upstream [MIT license](licenses/shadcn-skill.txt) is included. Recheck the s
 
 Repository instructions select the official `@shadcn` registry and replace upstream `npx shadcn@latest` examples with the pinned CLI command.
 Run `npm run ai:shadcn -- info --json` explicitly for project context; do not assume inline commands in skill text executed.
-Phase 1 created `components.json` with the Base UI `base-nova` preset and the official registry.
+`components.json` selects the Base UI `base-nova` preset and the official registry.
 The generated component source lives in `src/components/ui/`.
 
 The tested MCP search response contains `[object Promise]` in generated add-command fields.
 Use the pinned CLI directly for component changes, such as `npm run ai:shadcn -- add @shadcn/button` during authorized application work.
 The smoke check verifies registry search; it does not claim component installation was tested.
+
+## Agent check workflow
+
+Run `npm run format` after edits, then `npm run ai:verify`. Resolve failures without disabling checks.
+Prettier owns formatting and Tailwind class order. ESLint validates code; TypeScript and behavioral tests provide separate checks.
+Follow the [formatting, hook, and CI instructions](developers.md#formatting-hooks-and-ci).
+
+Use Playwright MCP to inspect UI changes. View the screenshots, test keyboard interaction, and record actual findings.
+Keep credentials and real participant details out of evidence. Store raw evidence under ignored `artifacts/`.
+Mocked calls and synthetic media cannot establish physical-device behavior.
 
 ## Validation commands
 
@@ -83,7 +89,7 @@ The smoke check verifies registry search; it does not claim component installati
 | `npm run ai:docs:smoke`            | Connection and tool discovery for both documentation servers.                                                    |
 | `npm run ai:shadcn:smoke`          | shadcn MCP connection, tool discovery, and a read-only search for the official button component.                 |
 | `npm run ai:shadcn -- <arguments>` | Run the pinned shadcn CLI. Mutating commands remain limited to the authorized phase.                             |
-| `npm run ai:verify`                | Scaffolding, lint, type checks, unit tests, browser tests, and production build.                           |
+| `npm run ai:verify`                | Scaffolding, formatting, lint, type checks, unit tests, browser tests, and production build.                     |
 
 `ai:verify` runs the real application commands and fails if any command fails or is missing.
 The browser suite owns port 3100. Stop other development servers before running it.
@@ -92,36 +98,12 @@ Keep screenshots and traces in ignored `artifacts/`. Use synthetic data and excl
 The browser workflow requires the agent to view screenshots, not merely save them.
 Fake media and browser automation do not prove communication between physical devices.
 
-## Validation record
+## Versioned framework documentation
 
-Validated on 2026-09-10 using macOS arm64, Node.js 26.8.1, npm 11.19.0, and Codex CLI 0.153.4.
+Next.js includes guides under `node_modules/next/dist/docs/`. Read relevant installed guides before framework changes.
+The development server maintains its official guidance block in `AGENTS.md`; retain that upstream block.
 
-| Check                             | Actual result                                                                                  |
-| --------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Dependency installation           | Passed. npm reported zero known vulnerabilities for 99 audited packages.                       |
-| `npm run ai:check`                | Passed.                                                                                        |
-| Bundled skill-creator validator   | Passed for all three repository skills.                                                        |
-| `codex mcp get playwright --json` | Loaded the project launcher and reported `enabled: true`.                                      |
-| Session-start command             | Returned valid context JSON from both the repository root and `docs/`.                         |
-| Documentation MCP checks          | Connected to LiveKit Docs with 9 tools and OpenAI Docs with 5 tools.                           |
-| Playwright MCP smoke check        | Passed navigation, snapshot, button interaction, and PNG capture.                              |
-| Screenshot inspection             | Viewed `artifacts/playwright/tooling-smoke.png`; the fixture showed the confirmed interaction. |
-| Application verification guard    | Exited with code 1 and named all five missing application commands, as intended.               |
-| Git whitespace and ignore checks  | Passed. Browser evidence, caches, and dependencies remain ignored.                             |
+## Evidence
 
-Chromium failed to launch inside the restricted shell sandbox. The browser check passed with approved local process access.
-The smoke script uses the installed MCP tool schema, including `target` for clicks and `scale` for screenshots.
-No browser sandbox protections were disabled in repository configuration.
-These historical results validate the tooling fixture only. At that point, no application or physical-device check existed.
-The new MCP tools are configured for subsequent Codex sessions; this session verified them through an MCP client script.
-Native hook activation and optional agent spawning were not exercised. Review the hook through `/hooks` in a new Codex session.
-No commit, push, or deployment occurred.
-
-The table above records the initial scaffolding checks. It does not claim that later changes reran those checks.
-See the [validation record](../planning-docs/validation.md) for subsequent planning and application results.
-
-## Next.js local documentation
-
-Next.js 16.3.4 includes versioned guides under `node_modules/next/dist/docs/`.
-Read the relevant installed guide before framework changes. The development server also adds its official guidance block to `AGENTS.md`.
-That generated block is retained unchanged. It contains upstream wording and punctuation.
+Tooling validation and application evidence are recorded in [Validation](../planning-docs/validation.md).
+Native hook activation and optional review-agent execution need their own checks; configuration alone does not prove either.

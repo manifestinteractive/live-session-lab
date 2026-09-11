@@ -2,19 +2,27 @@ import { ConnectionQuality, ConnectionState, MediaDeviceFailure } from "livekit-
 import type { InputKind } from "./call-session";
 
 /** Return fixed messages. Provider/browser error text can contain private device details. */
-export function mediaFailureMessage(error: unknown, kind: InputKind) {
-  if (error && typeof error === "object" && "name" in error && error.name === "SecurityError") return "Capture is unavailable. Open the app over HTTPS or localhost in a browser that supports camera and microphone access.";
+export function mediaFailureMessage(
+  error: unknown,
+  kind: InputKind,
+  retry: "enable it again" | "refresh the device list" = "enable it again",
+) {
+  if (error && typeof error === "object" && "name" in error && error.name === "SecurityError")
+    return "Capture is unavailable. Open the app over HTTPS or localhost in a browser that supports camera and microphone access.";
   const label = kind === "camera" ? "Camera" : "Microphone";
-  const alternative = kind === "camera" ? "You can keep the camera off and use audio only." : "You can join to listen with the microphone off.";
+  const alternative =
+    kind === "camera"
+      ? "You can keep the camera off and use audio only."
+      : "You can join to listen with the microphone off.";
   switch (MediaDeviceFailure.getFailure(error && typeof error === "object" ? error : {})) {
     case MediaDeviceFailure.PermissionDenied:
-      return `${label} access was blocked. Allow access in this site's browser settings, then enable it again. ${alternative}`;
+      return `${label} access was blocked. Allow access in this site's browser settings, then ${retry}. ${alternative}`;
     case MediaDeviceFailure.NotFound:
-      return `No ${kind} is available. Connect a device, then enable it again. ${alternative}`;
+      return `No ${kind} is available. Connect a device, then ${retry}. ${alternative}`;
     case MediaDeviceFailure.DeviceInUse:
-      return `${label} could not start. Close other applications using it, then enable it again. ${alternative}`;
+      return `${label} could not start. Close other applications using it, then ${retry}. ${alternative}`;
     default:
-      return `${label} is unavailable. Check the device and browser permissions, then enable it again. ${alternative}`;
+      return `${label} is unavailable. Check the device and browser permissions, then ${retry}. ${alternative}`;
   }
 }
 
@@ -23,13 +31,20 @@ export function connectionMessage(state: ConnectionState, quality: ConnectionQua
     return "Connection interrupted. LiveKit is reconnecting. Media may pause; you can leave at any time.";
   }
   if (state === ConnectionState.Connecting) return "Connecting to the private session...";
-  if (state === ConnectionState.Disconnected) return "Disconnected. Preview stays on this device until you join.";
-  if (quality === ConnectionQuality.Lost) return "Media connection interrupted. LiveKit is checking the connection.";
-  if (quality === ConnectionQuality.Poor) return "Connected with poor connection quality. Turn off the camera to reduce traffic.";
-  return "Connected to the private session.";
+  if (state === ConnectionState.Disconnected)
+    return "Disconnected. Preview stays on this device until you join.";
+  if (quality === ConnectionQuality.Lost)
+    return "Media connection interrupted. LiveKit is checking the connection.";
+  if (quality === ConnectionQuality.Poor)
+    return "Connected with poor connection quality. Turn off the camera to reduce traffic.";
+  return "Session Joined";
 }
 
 export function qualityLabel(quality: ConnectionQuality, connected: boolean) {
   if (!connected) return "Unavailable";
-  return ({ excellent: "Excellent", good: "Good", poor: "Poor", lost: "Lost", unknown: "Unavailable" })[quality] ?? "Unavailable";
+  return (
+    { excellent: "Excellent", good: "Good", poor: "Poor", lost: "Lost", unknown: "Unavailable" }[
+      quality
+    ] ?? "Unavailable"
+  );
 }

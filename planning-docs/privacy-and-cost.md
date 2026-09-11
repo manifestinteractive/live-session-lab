@@ -1,148 +1,93 @@
 # Privacy and cost
 
-## Local phone testing
-
-The optional `dev:lan` command serves development HTTPS on all IPv4 interfaces with `0.0.0.0:3000`.
-Use it only on the trusted local network. It is not a public deployment.
-`lan:setup` creates a certificate for a selected local address using an existing mkcert CA.
-It does not install trust or change `.env.local`. Certificates and LAN configuration remain ignored by Git.
-Only the public root certificate is copied for phone installation. Private keys must remain on the Mac.
-Installing the public root gives that device trust in certificates issued by the local CA.
-Remove the phone's test certificate profile when testing ends.
-The LAN server and `invite:lan` command share one HTTPS origin. Token admission still requires that exact origin and a valid invitation.
-Use an explicit `ADMISSION_ENABLED=true` process override for controlled calls, then stop that process after testing.
-The [README](../README.md#test-from-a-phone-on-the-local-network) contains the local setup steps.
-
-Status: requirements for the planned application. Account plans and deployed controls have not been verified.
-
 ## Data handling
 
-This prototype supports test conversations with temporary display names. Exclude sensitive real-world use.
-The application will not record or transcribe calls. Add no analytics, database, user accounts, or stored call history.
+Use temporary names and test conversations. This demo is not intended for sensitive real-world use.
+The application adds no recording, transcription, analytics, database, or stored call history.
 
-| Data                                 | Planned handling                                                                                                    |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Camera/microphone preview            | Remains local before joining. Capture starts only after an explicit participant action.                             |
-| Published audio/video                | Travels through LiveKit to the other participant after joining. The application stores no call content.             |
-| Temporary display name               | Sent to the token endpoint and LiveKit for participant display. Never include it in application logs.               |
-| Participant and room identifiers     | Use generated, non-sensitive identifiers. LiveKit and participants process identifiers needed for the room.         |
-| Invitation and participant tokens    | Bearer credentials held in browser memory; never persist them in browser storage or diagnostic output.              |
-| Signing and API secrets              | Local operator environment and server environment only. Never include them in browser bundles or public files.      |
-| IP addresses and connection metadata | Hosting and media providers process connection information. Do not claim that providers retain no logs or metadata. |
+| Data                                 | Handling                                                                                                           |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Camera/microphone preview            | Stays on the participant's device until joining. Starts after an explicit media action.                            |
+| Input discovery                      | A menu action can request temporary capture permission to reveal devices. Temporary tracks stop after enumeration. |
+| Published audio/video                | Travels through LiveKit to the other participant. The application stores no call content.                          |
+| Temporary name                       | Sent to the token endpoint and LiveKit for display during the call. Excluded from application logs.                |
+| Room and participant identifiers     | Generated identifiers used by the application, LiveKit, and participants.                                          |
+| Codes, invitations, and tokens       | Bearer credentials kept in browser memory during use. Never persist them in browser storage or logs.               |
+| API and signing secrets              | Operator and server environments only. Excluded from browser bundles and public files.                             |
+| Device labels and choices            | Kept in memory for input selection. Not stored by the application.                                                 |
+| IP addresses and connection metadata | Processed by hosting and media providers. Provider processing and logs are outside application storage.            |
 
-Use HTTPS and standard encrypted WebRTC transport. Do not claim end-to-end encryption or regulatory compliance.
-LiveKit documents end-to-end encryption as an additional feature that requires application key distribution.
-It is outside this release. [LiveKit encryption](https://docs.livekit.io/transport/encryption/)
+Use HTTPS and standard encrypted WebRTC transport. This release does not implement end-to-end encryption or make compliance claims.
+LiveKit's additional encryption feature requires application key distribution. [LiveKit encryption](https://docs.livekit.io/transport/encryption/)
+Another participant can capture a call outside this application.
 
-Remove invitation fragments immediately after reading them. Use same-origin POST and non-cacheable token responses.
-Do not add third-party scripts that can read credentials. Do not log request bodies, tokens, invitation URLs, or display names.
-Keep diagnostics restricted to supported SDK status. Treat invitation sharing as granting bearer access until expiry.
-Another participant can capture a call outside this application; no application claim should imply otherwise.
+## Trust boundaries
 
-Use synthetic data in automated tests. Keep raw browser evidence under ignored `artifacts/`.
-Avoid traces or screenshots containing credentials or real participant information.
-Store only sanitized test outcomes in public documentation. Do not put real conversations into AI development tools.
+The browser removes invitation fragments after reading them. Admission credentials travel through a same-origin POST with non-cacheable responses.
+Anyone with a code or invitation can use that participant place. Reuse replaces its connection; host does not grant administration.
+No database provides individual invitation revocation or strict device reservations.
 
-## Zero-cost operation
+The application loads no third-party scripts, external fonts, or remote placeholder images.
+Response headers prevent framing, suppress referrers, and restrict camera and microphone permissions to the same origin.
+Screen capture and geolocation are disabled. These headers do not replace credential validation.
 
-Pricing facts checked on 2026-09-10. Verify them again before deployment or a plan change.
+The SDK uses non-sensitive `SILENT` log-level settings in local storage. Credentials, names, device choices, and call content remain excluded.
+Browser permission decisions, browser diagnostics, and provider logs have separate lifecycles.
+Connection details shows SDK state and quality. Fixed error messages exclude raw provider errors and identifiers.
 
-| Service       | Selected plan | Limit behavior                                                                                                  |
-| ------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
-| LiveKit Cloud | Build, free   | Includes 5,000 WebRTC participant-minutes and 50 GB downstream transfer monthly. Free allowances are hard caps. |
-| Vercel        | Hobby, free   | Personal, non-commercial use with resource limits. Features can pause when usage exceeds allowances.            |
+Input discovery requests only the selected input type. It does not publish, display, or record temporary capture.
+Cancellation stops late capture results when they resolve. The app cannot close a browser permission prompt itself.
+Mobile backgrounding or browser termination can interrupt calls; recovery is not guaranteed.
 
-LiveKit rejects new requests at exhausted free allowances instead of billing overages.
-Free allowances are shared across a user's free projects and reset monthly.
-[LiveKit quotas and limits](https://docs.livekit.io/deploy/admin/quotas-and-limits/)
+Use synthetic data for automated tests. Keep raw evidence in ignored `artifacts/` and omit credentials from screenshots and traces.
+Do not put real conversations or credentials into AI development tools.
 
-Two people connected for ten minutes use twenty participant-minutes. Bandwidth is a separate allowance and depends on actual media traffic.
-Do not promise a fixed number of free calls or uninterrupted availability.
+## Free operation
 
-Vercel Hobby is restricted to personal, non-commercial use. Many exceeded limits require waiting before the feature becomes available again.
+Public provider documentation was checked on 2026-09-11. Verify account plans and current limits again before deployment.
+
+| Service       | Selected plan | Limit behavior                                                                                   |
+| ------------- | ------------- | ------------------------------------------------------------------------------------------------ |
+| LiveKit Cloud | Build, free   | Includes 5,000 WebRTC participant-minutes and 50 GB downstream transfer monthly, with hard caps. |
+| Vercel        | Hobby, free   | Personal, non-commercial use. Resource limits can pause affected features.                       |
+
+LiveKit rejects new requests when free allowances are exhausted. Free projects share a user's allowances, which reset monthly.
+Two participants connected for ten minutes use twenty participant-minutes. Bandwidth is a separate allowance.
+Do not promise a fixed number of calls or continuous availability. [LiveKit quotas and limits](https://docs.livekit.io/deploy/admin/quotas-and-limits/)
+
+Vercel Hobby restricts use to personal, non-commercial projects. Exceeded limits can require waiting before features become available again.
 [Vercel Hobby](https://vercel.com/docs/plans/hobby)
 
-Use the included hosting address. Do not buy a domain or enable paid add-ons for this prototype.
-Do not use a paid plan's included allowance as a substitute for a free plan with hard limits.
-The zero-cost target covers these hosted services. Existing internet access and development tools remain outside that target.
-If provider terms change, disable the demo and review the plan before accepting charges.
+Use the included hosting address. Do not enable paid plans or add-ons to keep the demo running.
+If provider terms change, disable admission and review the plan before accepting charges.
+The zero-cost target covers hosting and media services. Existing internet access and development tools are outside that target.
+Account confirmations and outstanding checks are in [Validation](validation.md).
 
 ## Operator controls
 
-Before deployment, confirm LiveKit Build and Vercel Hobby in the actual account dashboards.
-Check any shared allowance already used by other projects. Record the date and confirmed plan names without account identifiers.
+Verify LiveKit Build and Vercel Hobby in the actual dashboards before deployment. Check allowance shared with other projects.
+Review usage before external sessions. The app has no distributed request limiter; provider free limits form the cost boundary.
+Do not describe an in-memory limit as protection across serverless instances.
 
-Issue two participant-specific invitations per room. Reuse replaces that participant's connection. Do not publish a reusable invitation in the repository or landing page.
-Use provider request protections available on the free plans. Do not claim an in-memory limiter protects all serverless instances.
-Inspect provider usage before an external test session. Treat provider-enforced free limits as the cost boundary.
+| Action                                                  | Effect and limit                                                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Set `ADMISSION_ENABLED=false`, then restart or redeploy | Stops new token issuance. Existing calls and already issued tokens remain valid.            |
+| Rotate a host or guest code, then restart or redeploy   | Blocks future exchanges using that code. Keep the room name to preserve participant places. |
+| Rotate the invitation signing secret                    | Invalidates signed invitations for future exchanges. Does not revoke participant tokens.    |
+| Terminate active rooms through LiveKit administration   | Disconnects current participants. Issued tokens can still be usable until expiry.           |
 
-Handle quota and provider failures with a useful unavailable state. Do not retry indefinitely or automatically upgrade services.
-A quota failure does not prove that an existing call ended.
+Keep admission disabled during shutdown. Account for the five-minute lifetime of issued participant tokens and SDK reconnect behavior.
+Invitation expiry and room empty timeouts do not terminate active calls.
+Verify that rooms are closed. Phase 4 must verify exact operator commands and resource-removal procedures for the selected deployment.
+See the [developer guide](../docs/developers.md#operating-limits) for local controls.
 
-To stop admission, disable the token endpoint through the documented server setting and apply the hosting configuration change.
-Previously issued tokens may still permit admission until expiry. Disabling new tokens does not disconnect active participants.
-Use authorized LiveKit room administration to terminate active rooms, and verify that they are closed.
-Account for the remaining lifetime of issued tokens when verifying that new sessions can no longer start.
+## Local phone testing
 
-Without a database, the application has no individual invitation revocation list.
-Rotating the invitation signing secret invalidates invitations signed with the old secret for future exchanges.
-It does not revoke issued participant tokens or end existing calls. Keep admission disabled while completing shutdown.
+The optional LAN server binds to `0.0.0.0:3000` on a trusted local network. It is not a public deployment.
+The setup script creates ignored certificates and LAN configuration using an existing mkcert certificate authority.
+It does not install trust or change `.env.local`. Both devices must trust the selected HTTPS address.
 
-The Phase 4 guide must supply exact, verified operator commands and hosting steps for shutdown and resource removal.
-Document separate removal of the Vercel deployment and LiveKit resources when testing ends.
-
-## Phase 1 data handling (historical)
-
-The disconnected interface does not request capture permissions, enumerate devices, or connect to LiveKit.
-The temporary display-name field is not submitted. The application does not copy it to browser storage or cookies.
-Reloading or leaving the setup clears the field in the tested browsers. Browser extensions and browser-managed state remain outside application control.
-The interface loads no external fonts, analytics, or provider resources.
-Local Next.js development tooling processes page requests. A future deployment can also generate provider request logs.
-The application needs no credentials to run Phase 1. `.env.example` contains placeholders for later integration.
-`ADMISSION_ENABLED=false` records the future default; no admission endpoint exists to enable in Phase 1.
-
-## Phase 2 data handling
-
-The private call route reads the invitation fragment after hydration and removes it before setup interaction.
-No third-party scripts load in the application. Invitations and issued participant tokens stay in memory.
-A participant must click to start camera or microphone preview. Preview stays local until Join publishes its tracks.
-Join sends the invitation and temporary name to the application server. LiveKit receives the name and media after connection.
-The server checks the room configuration through LiveKit before issuing a participant token.
-Provider logs and browser network inspection can contain connection metadata. Application storage and logs do not retain call content or credentials.
-The client disables SDK diagnostic logging. The SDK persists non-sensitive `SILENT` log-level settings in local storage.
-No invitation, token, display name, device choice, or call content enters that storage. Tests check the exact allowed settings.
-Browser-level diagnostics remain outside application control.
-
-Disabling admission blocks future token requests. Previously issued five-minute tokens can still be used until expiry.
-Existing connections and SDK reconnect tokens have their own lifecycle. Invitation expiry does not terminate them.
-An operator must end active rooms separately. Short room departure timeouts remove empty rooms, not active calls.
-Individual invitation revocation remains unavailable without rotating the shared signing secret, which invalidates all unexpired invitations.
-Rotating that secret does not revoke already issued LiveKit tokens.
-
-Automated checks use synthetic secrets and mocked provider administration. Invitation-bearing browser tests do not retain traces or videos.
-The default suite uses no real credentials or provider resources. The separate opt-in live command uses a confirmed free project.
-Physical-device validation remains separate.
-
-## Phase 2 capacity limitation
-
-The live check on 2026-09-10 admitted three ordinary participants while LiveKit reported `maxParticipants: 2`.
-A separate test with one room creation and standard tokens reproduced the failure.
-The room setting alone did not establish capacity. The revised demo issues only two stable identities instead.
-Invitation reuse replaces its existing connection. Anyone with the invitation can use that place until expiry.
-This avoids a database, but does not provide strict device reservations or participant identity verification.
-The optional `npm run test:live` command consumes provider allowance and must run only on a confirmed free project.
-The default `npm run ai:verify` command keeps admission disabled and makes no provider calls.
-See [Validation](validation.md) for observations and unperformed physical-device checks.
-
-## Phase 3 privacy controls and limitations
-
-Recovery messages use fixed error categories. They do not display provider errors, device identifiers, invitations, or tokens.
-Connection details contains SDK state and connection quality only. Unknown quality is labeled Unavailable.
-Device labels remain in memory for input selection; the application does not store them.
-The browser can preserve its own permission decisions outside application storage.
-
-Responses set a no-referrer policy and reject framing. Camera and microphone permissions are limited to the same origin.
-Screen capture and geolocation are disabled. No analytics or call recording was added.
-A native permission prompt can outlive a cancelled setup. Any resulting track is stopped when the pending request resolves.
-Mobile backgrounding and browser termination can interrupt a call; recovery is not guaranteed.
-Physical Safari, iPhone, and Wi-Fi/cellular checks still need separate recorded results.
+Copy only the public root certificate to the phone. Never share private keys.
+Installing it trusts certificates issued by that local authority. Remove the test certificate profile when testing ends.
+A local IP address does not support cellular-only calls. Stop the LAN server after testing.
+Follow the [phone testing instructions](../docs/developers.md#test-from-a-phone-on-the-local-network).

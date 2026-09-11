@@ -1,5 +1,5 @@
-import { Introduction } from "@/components/session-preview";
+import { PrivateCall } from "@/components/private-call";
 
 export default function HomePage() {
-  return <Introduction />;
+  return <PrivateCall />;
 }
