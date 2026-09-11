@@ -2,7 +2,9 @@
 
 Deliver one authorized phase at a time, then stop for human review.
 The application contains the Phase 1-3 capabilities below. Release acceptance remains subject to [Validation](validation.md).
-Phase 4 local handoff preparation is complete. Deployment and hosted acceptance require separate authorization and results.
+Phase 4 local handoff preparation is complete. On 2026-09-11, the user reported deployment and successful Host and Guest connections on actual devices.
+The [public site](https://live-session-lab.vercel.app/) is visible to visitors. Invitations remain private and are required to join calls.
+Remaining hosted acceptance checks are listed in [Validation](validation.md#release-checks-still-needed).
 
 This plan describes the intended release. Use [Architecture](architecture.md) for decisions and the [developer guide](../docs/developers.md) for commands.
 

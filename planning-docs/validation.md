@@ -1,7 +1,8 @@
 # Validation
 
 This record separates application checks, provider tests, and physical-device reports.
-Required cases are acceptance criteria, not claims that testing occurred. Phase 4 local handoff preparation is complete; hosted acceptance is pending.
+Required cases are acceptance criteria, not claims that testing occurred. Phase 4 local handoff preparation is complete.
+The user reported deployment and successful actual-device calls on 2026-09-11. Detailed hosted acceptance checks remain open below.
 
 ## Required checks
 
@@ -67,7 +68,8 @@ Verified on 2026-09-11. Deployment and live operator checks were not performed.
 
 These changes do not modify the application interface or fullscreen behavior.
 No LiveKit room was inspected or terminated during this phase. No provider allowance was consumed by these checks.
-Physical shutdown, hosted admission, and account confirmation remain release requirements.
+At this local handoff, physical shutdown, hosted admission, and account confirmation remained release requirements.
+The later hosted report below confirms successful Host and Guest connections.
 
 ## Join-field autofill checks
 
@@ -158,23 +160,58 @@ On 2026-09-11, the user confirmed that enabling capture revealed the iOS device 
 Automatic permission discovery from a menu action still needs a physical iPhone check.
 The current interface and code-link flow have not received a complete physical-device acceptance run.
 
+## Hosted deployment and physical-device report
+
+Reported by the user on 2026-09-11. The agent did not observe these tests.
+
+| Case                | Reported result                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| Deployment          | The site is deployed at [https://live-session-lab.vercel.app/](https://live-session-lab.vercel.app/). |
+| Public access       | Visitors can view the general site. Joining calls requires a private invitation.                      |
+| Invitation sharing  | The user keeps invitations private and shares them only with selected participants.                   |
+| Actual-device calls | The user connected as both Host and Guest and reported that the call worked.                          |
+
+Device models, OS versions, browser versions, and network types were not supplied for this hosted test.
+This report does not establish results for the remaining acceptance cases below.
+The user confirmed Vercel Hobby and LiveKit Cloud Build with no paid add-ons on 2026-09-11.
+
+For this documentation update, `npm run format` passed.
+`npm run ai:verify` passed scaffolding, formatting, lint, types, and 96 unit tests.
+Browser tests could not start because an existing Next.js development server held the project lock. The build stage was not reached.
+
+## Version 1.0.0 release preparation
+
+Verified on 2026-09-11. Both package files declare version `1.0.0` and the MIT license.
+The package retains `private: true` to prevent npm publication. This setting does not restrict the public repository or site.
+
+After stopping the local development server, the sandboxed browser run hit file-watching errors and was stopped.
+`npm run ai:verify` then passed with normal local process access: scaffolding, formatting, lint, types, 96 unit tests, 100 browser tests, and build.
+One Chromium-only native fullscreen case remains intentionally skipped in WebKit.
+
+Before this release deployment, the public HTTPS home page returned HTTP 200.
+A synthetic invalid invitation returned HTTP 401 with `invalid_code` and `Cache-Control: no-store, private`.
+These HTTP checks did not request media or use real invitations.
+The current official LiveKit and Vercel documentation still describes free plans with usage limits.
+The user confirmed both deployed accounts use those free plans with no paid add-ons.
+
 ## Release checks still needed
 
 Record date, device, OS, browser version, network, and outcome for each physical run.
 Use a Mac and a physical iPhone with headphones. Test Chrome and Safari on the Mac, plus Safari on the iPhone.
 
-| Check                                                                                | Status                                                                 |
-| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| Full verification after pre-release cleanup                                          | Passed on 2026-09-11, including Phase 4 local preparation.             |
-| Installed app on iPhone and desktop                                                  | Not run. Check fresh launch, icons, permissions, rotation, and calls.  |
-| Current UI on physical iPhone Safari                                                 | Not run. Include input menus, permission discovery, and code links.    |
-| Fullscreen orientation and confirmed leave on physical devices                       | Not run. Include portrait and landscape.                               |
-| Wi-Fi/cellular calls and network handoff                                             | Not run. A local IP cannot support cellular-only access.               |
-| Physical device switching, preview cancellation, and background/screen-lock recovery | Not run.                                                               |
-| VoiceOver and manual contrast/focus review of the final interface                    | Not run. Automated accessibility scans provide separate coverage.      |
-| Actual Vercel Hobby account and deployment configuration                             | Not verified.                                                          |
-| LiveKit Cloud Build account                                                          | Confirmed by the user on 2026-09-10. Recheck before deployment.        |
-| Hosted HTTPS admission and active-room shutdown                                      | Not run. No public deployment is recorded.                             |
-| Native Codex hook activation and optional review agents                              | Not exercised. These are tooling checks, not call acceptance blockers. |
+| Check                                                                                | Status                                                                                                                             |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Full verification after pre-release cleanup                                          | Passed on 2026-09-11, including Phase 4 local preparation.                                                                         |
+| Installed app on iPhone and desktop                                                  | Not run. Check fresh launch, icons, permissions, rotation, and calls.                                                              |
+| Current UI on physical iPhone Safari                                                 | Not run. Include input menus, permission discovery, and code links.                                                                |
+| Fullscreen orientation and confirmed leave on physical devices                       | Not run. Include portrait and landscape.                                                                                           |
+| Wi-Fi/cellular calls and network handoff                                             | Hosted calls reported; network types and handoff results not supplied.                                                             |
+| Physical device switching, preview cancellation, and background/screen-lock recovery | Not run.                                                                                                                           |
+| VoiceOver and manual contrast/focus review of the final interface                    | Not run. Automated accessibility scans provide separate coverage.                                                                  |
+| Actual Vercel Hobby account and deployment configuration                             | Hobby and no paid add-ons confirmed by the user on 2026-09-11. Dashboard configuration remains unverified.                         |
+| LiveKit Cloud Build account                                                          | Build and no paid add-ons confirmed by the user on 2026-09-11.                                                                     |
+| Hosted HTTPS admission                                                               | Host and Guest connections passed by user report on 2026-09-11. A synthetic invalid invitation returned HTTP 401 on the same date. |
+| Hosted active-room shutdown                                                          | Not run.                                                                                                                           |
+| Native Codex hook activation and optional review agents                              | Not exercised. These are tooling checks, not call acceptance blockers.                                                             |
 
 Do not claim release readiness until required checks pass and the human accepts the result.

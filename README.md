@@ -46,7 +46,9 @@ Next.js, React, and TypeScript power the application. shadcn/ui and Tailwind CSS
 LiveKit handles signaling and WebRTC media. The application uses no database.
 
 Development follows a public plan with human review at each phase. Automated checks and physical-device reports are recorded separately.
-Public deployment is pending. The [validation record](planning-docs/validation.md) lists current results and release checks.
+The [public site](https://live-session-lab.vercel.app/) is deployed. Calls require private invitations.
+The user reported successful Host and Guest connections on actual devices on 2026-09-11.
+The [validation record](planning-docs/validation.md) lists current results and remaining release checks.
 
 - [Developer guide](docs/developers.md): run locally, configure private calls, and test changes.
 - [Development plan](planning-docs/README.md): scope, architecture, and delivery phases.

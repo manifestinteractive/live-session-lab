@@ -3,7 +3,7 @@
 Live Session Lab is an independent WebRTC experiment for private, two-person browser calls.
 These documents define the complete project requirements and the human review process for AI-assisted development.
 
-Status: Phase 4 local handoff preparation is complete. Public deployment and hosted acceptance remain pending.
+Status: Phase 4 local handoff preparation is complete. The user reported public deployment and successful actual-device calls on 2026-09-11.
 The [validation record](validation.md) identifies verified behavior and outstanding release checks.
 
 ## Document index
